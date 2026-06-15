@@ -1,0 +1,14 @@
+service: etf-wealth-tracker
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ap-southeast-1
+
+functions:
+  createTransaction:
+    handler: lambdas/createTransaction.handler
+    events:
+      - httpApi:
+          path: /transactions
+          method: post
