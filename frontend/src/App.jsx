@@ -427,17 +427,6 @@ function App() {
 
         {activeTab === "dashboard" && (
           <>
-            <WealthDashboardSummary
-             netWorth={netWorth}
-             portfolioValue={totalValue}
-             portfolioGoal={portfolioGoal}
-             monthlyPassiveIncome={monthlyPassiveIncome}
-             monthlyIncomeGoal={100}
-             fireNumber={fireNumber}
-             totalDividends={totalDividends}
-             dividendCalendar={dividendCalendar}
-             performance={performance}
-            />
 
             <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <MetricCard title="Total Invested" value={`$${totalInvested.toFixed(2)}`} />
@@ -456,6 +445,7 @@ function App() {
               dividendCalendar={dividendCalendar}
               totalDividends={totalDividends}
               portfolioGoal={portfolioGoal}
+              yieldOnCost={yieldOnCost}
               strengths={strengths}
               opportunities={opportunities}
               riskLevel={riskLevel}
@@ -467,8 +457,10 @@ function App() {
               bestPerformer={bestPerformer}
               worstPerformer={worstPerformer}
               largestAssetType={largestAssetType}
+              netWorth={netWorth}
+              fireNumber={fireNumber}
+              yieldOnCost={yieldOnCost}
             />
-
           </>
         )}
         
