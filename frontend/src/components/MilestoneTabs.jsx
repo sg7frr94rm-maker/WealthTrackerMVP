@@ -1,5 +1,5 @@
 import { useState } from "react";
-import MilestoneNotificationCenter from "./MilestoneNotificationCenter";
+import MilestoneProgress from "./MilestoneProgress";
 import MilestoneTracker from "./MilestoneTracker";
 import AchievementTracker from "./AchievementTracker";
 
@@ -11,7 +11,7 @@ function MilestoneTabs({
   netWorth,
   fireProgress,
 }) {
-  const [activeTab, setActiveTab] = useState("notifications");
+  const [activeTab, setActiveTab] = useState("progress");
 
   return (
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
@@ -24,10 +24,10 @@ function MilestoneTabs({
 
       <div className="mb-6 flex flex-wrap gap-2">
         <TabButton
-          active={activeTab === "notifications"}
-          onClick={() => setActiveTab("notifications")}
+          active={activeTab === "progress"}
+          onClick={() => setActiveTab("progress")}
         >
-          Notifications
+          Progress
         </TabButton>
 
         <TabButton
@@ -45,8 +45,8 @@ function MilestoneTabs({
         </TabButton>
       </div>
 
-      {activeTab === "notifications" && (
-        <MilestoneNotificationCenter
+      {activeTab === "progress" && (
+        <MilestoneProgress
           portfolioValue={portfolioValue}
           portfolioGoal={portfolioGoal}
           totalDividends={totalDividends}

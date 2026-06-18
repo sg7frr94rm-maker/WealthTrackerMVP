@@ -469,15 +469,6 @@ function App() {
               largestAssetType={largestAssetType}
             />
 
-            <MilestoneTabs
-              portfolioValue={totalValue}
-              portfolioGoal={portfolioGoal}
-              totalDividends={totalDividends}
-              monthlyPassiveIncome={monthlyPassiveIncome}
-              netWorth={netWorth}
-              fireProgress={fireProgress}
-            />
-
           </>
         )}
         
@@ -543,28 +534,38 @@ function App() {
         )}
 
         {activeTab === "reports" && (
+         <>
           <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center shadow-xl">
-            <h2 className="text-xl font-bold">Reports</h2>
-            <p className="mt-2 text-slate-400">
+          <h2 className="text-xl font-bold">Reports</h2>
+          <p className="mt-2 text-slate-400">
               Generate a one-page PDF summary of your portfolio, net worth, allocation and milestones.
-            </p>
+          </p>
 
-            <button
-              onClick={handleDownloadReport}
-              className="mt-6 rounded-lg bg-indigo-600 px-6 py-3 font-semibold hover:bg-indigo-500"
-            >
-              Generate Wealth Report
-            </button>
+          <button
+            onClick={handleDownloadReport}
+            className="mt-6 rounded-lg bg-indigo-600 px-6 py-3 font-semibold hover:bg-indigo-500"
+          >
+            Generate Wealth Report
+          </button>
 
-            <button
-              onClick={backupDatabase}
-              className="ml-3 mt-6 rounded-lg bg-blue-600 px-6 py-3 font-semibold hover:bg-blue-500"
-            >
-              Backup Database
-            </button>
+          <button
+            onClick={backupDatabase}
+            className="ml-3 mt-6 rounded-lg bg-blue-600 px-6 py-3 font-semibold hover:bg-blue-500"
+          >
+        Backup Database
+      </button>
+    </section>
 
-          </section>
-        )}
+    <MilestoneTabs
+      portfolioValue={totalValue}
+      portfolioGoal={portfolioGoal}
+      totalDividends={totalDividends}
+      monthlyPassiveIncome={monthlyPassiveIncome}
+      netWorth={netWorth}
+      fireProgress={fireProgress}
+    />
+  </>
+)}
 
         </motion.div>
       </AnimatePresence>

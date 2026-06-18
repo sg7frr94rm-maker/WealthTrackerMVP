@@ -1,4 +1,4 @@
-function MilestoneNotificationCenter({
+function MilestoneProgress({
   portfolioValue,
   portfolioGoal,
   totalDividends,
@@ -60,7 +60,7 @@ function MilestoneNotificationCenter({
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
       <div className="mb-5">
         <h2 className="text-xl font-bold">
-          Milestone Notification Center
+          Milestone Progress
         </h2>
 
         <p className="mt-1 text-sm text-slate-400">
@@ -154,4 +154,4 @@ function SmallInfo({ label, value }) {
   );
 }
 
-export default MilestoneNotificationCenter;
+export default MilestoneProgress;
