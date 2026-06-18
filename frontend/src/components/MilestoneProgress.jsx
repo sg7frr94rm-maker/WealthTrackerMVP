@@ -3,7 +3,6 @@ function MilestoneProgress({
   portfolioGoal,
   totalDividends,
   monthlyPassiveIncome,
-  fireProgress = 7.3,
 }) {
   const milestones = [
     {
@@ -29,13 +28,6 @@ function MilestoneProgress({
       current: monthlyPassiveIncome,
       target: 100,
       type: "Income",
-    },
-    {
-      title: "FIRE Goal",
-      current: fireProgress,
-      target: 100,
-      type: "FIRE",
-      isPercent: true,
     },
   ];
 

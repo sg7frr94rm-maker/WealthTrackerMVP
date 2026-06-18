@@ -4,7 +4,6 @@ function PortfolioStressTest({
   portfolioValue,
   netWorth,
   portfolioGoal,
-  fireNumber = 900000,
 }) {
   const [customDrop, setCustomDrop] = useState(25);
 
@@ -12,9 +11,6 @@ function PortfolioStressTest({
 
   const currentGoalProgress =
     portfolioGoal > 0 ? (portfolioValue / portfolioGoal) * 100 : 0;
-
-  const currentFireProgress =
-    fireNumber > 0 ? (portfolioValue / fireNumber) * 100 : 0;
 
   const stressResults = scenarios.map((drop) => {
     const dropPercent = Math.abs(drop);
@@ -30,11 +26,6 @@ function PortfolioStressTest({
         ? (stressedPortfolioValue / portfolioGoal) * 100
         : 0;
 
-    const fireProgress =
-      fireNumber > 0
-        ? (stressedPortfolioValue / fireNumber) * 100
-        : 0;
-
     const recoveryNeeded =
       stressedPortfolioValue > 0
         ? ((portfolioValue - stressedPortfolioValue) /
@@ -48,7 +39,6 @@ function PortfolioStressTest({
       portfolioLoss,
       stressedNetWorth,
       goalProgress,
-      fireProgress,
       recoveryNeeded,
     };
   });
@@ -61,11 +51,11 @@ function PortfolioStressTest({
         </h2>
 
         <p className="mt-1 text-sm text-slate-400">
-          Simulate how market drawdowns may affect your portfolio value, net worth, goal progress and FIRE progress.
+          Simulate how market drawdowns may affect your portfolio value, net worth and goal progress.
         </p>
       </div>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-4">
+      <div className="mb-6 grid gap-4 md:grid-cols-3">
         <StressCard
           title="Current Portfolio"
           value={`$${portfolioValue.toFixed(2)}`}
@@ -81,12 +71,6 @@ function PortfolioStressTest({
         <StressCard
           title="Goal Progress"
           value={`${currentGoalProgress.toFixed(2)}%`}
-          positive
-        />
-
-        <StressCard
-          title="FIRE Progress"
-          value={`${currentFireProgress.toFixed(2)}%`}
           positive
         />
       </div>
@@ -156,11 +140,6 @@ function PortfolioStressTest({
               <MiniMetric
                 label="Goal Progress"
                 value={`${item.goalProgress.toFixed(2)}%`}
-              />
-
-              <MiniMetric
-                label="FIRE Progress"
-                value={`${item.fireProgress.toFixed(2)}%`}
               />
             </div>
           </div>

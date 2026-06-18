@@ -21,7 +21,6 @@ import {
 } from "./api/portfolioApi";
 
 import MetricCard from "./components/MetricCard";
-import WealthDashboardSummary from "./components/WealthDashboardSummary";
 import { AnimatePresence, motion } from "framer-motion";
 import MarketNews from "./components/MarketNews";
 import MilestoneTabs from "./components/MilestoneTabs";
@@ -33,7 +32,6 @@ import GoalsTabs from "./components/GoalsTabs";
 
 function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
-
   const [performance, setPerformance] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [trendData, setTrendData] = useState([]);
@@ -42,7 +40,6 @@ function App() {
   const [stats, setStats] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [portfolioGoal, setPortfolioGoal] = useState(100000);
-  
   const [netWorthData, setNetWorthData] = useState({
   cash: 0,
   cpf: 0,
@@ -203,7 +200,6 @@ function App() {
   const yieldOnCost = stats?.yieldOnCost || 0;
   const totalDividendIncome = stats?.annualDividendIncome || 0;
   const monthlyPassiveIncome = stats?.monthlyPassiveIncome || 0;
-
   const cash = Number(netWorthData.cash || 0);
   const cpf = Number(netWorthData.cpf || 0);
   const otherAssets = Number(netWorthData.otherAssets || 0);
@@ -215,13 +211,6 @@ function App() {
     cpf +
     otherAssets -
     loans;
-
-  const fireNumber = 900000;
-
-  const fireProgress =
-    fireNumber > 0
-      ? (netWorth / fireNumber) * 100
-      : 0;
 
   const totalReturnPercent =
     totalInvested > 0
@@ -270,13 +259,6 @@ function App() {
     performance.length > 0
       ? [...performance].sort(
           (a, b) => a.profitLossPercent - b.profitLossPercent
-        )[0]
-      : null;
-
-  const largestAssetType =
-    assetTypeData.length > 0
-      ? [...assetTypeData].sort(
-          (a, b) => b.value - a.value
         )[0]
       : null;
 
@@ -336,6 +318,10 @@ function App() {
 
   if (totalReturnPercent >= 0) {
     strengths.push("Portfolio is currently maintaining capital.");
+  }
+
+  if (strengths.length === 0) {
+    strengths.push("Portfolio is actively tracked and progressing toward long-term wealth accumulation.");
   }
 
   if (assetTypeData.length === 1) {
@@ -456,10 +442,7 @@ function App() {
               largestPosition={largestPosition}
               bestPerformer={bestPerformer}
               worstPerformer={worstPerformer}
-              largestAssetType={largestAssetType}
               netWorth={netWorth}
-              fireNumber={fireNumber}
-              yieldOnCost={yieldOnCost}
             />
           </>
         )}
@@ -505,6 +488,7 @@ function App() {
           <GoalsTabs
             portfolioGoal={portfolioGoal}
             totalValue={totalValue}
+            netWorth={netWorth}
             goalProgress={goalProgress}
             updatePortfolioGoal={updatePortfolioGoal}
             fetchData={fetchData}
@@ -516,7 +500,6 @@ function App() {
           <WealthTabs
             totalValue={totalValue}
             portfolioGoal={portfolioGoal}
-            trendData={trendData}
             netWorth={netWorth}
             cash={cash}
             cpf={cpf}
@@ -554,7 +537,6 @@ function App() {
       totalDividends={totalDividends}
       monthlyPassiveIncome={monthlyPassiveIncome}
       netWorth={netWorth}
-      fireProgress={fireProgress}
     />
   </>
 )}

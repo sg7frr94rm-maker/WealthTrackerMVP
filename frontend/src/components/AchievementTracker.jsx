@@ -2,7 +2,6 @@ function AchievementTracker({
   portfolioValue,
   netWorth,
   totalDividends,
-  fireProgress,
 }) {
   const achievements = [
     // Portfolio
@@ -69,26 +68,6 @@ function AchievementTracker({
       description: "Net worth exceeded $1M",
       unlocked: netWorth >= 1000000,
       icon: "👑",
-    },
-
-    // FIRE
-    {
-      title: "Started FIRE Journey",
-      description: "Started building wealth",
-      unlocked: fireProgress > 0,
-      icon: "🔥",
-    },
-    {
-      title: "FIRE 5%",
-      description: "Reached 5% FIRE progress",
-      unlocked: fireProgress >= 5,
-      icon: "🔥",
-    },
-    {
-      title: "FIRE 10%",
-      description: "Reached 10% FIRE progress",
-      unlocked: fireProgress >= 10,
-      icon: "🚀",
     },
   ];
 

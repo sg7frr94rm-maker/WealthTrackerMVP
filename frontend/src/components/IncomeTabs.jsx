@@ -17,7 +17,7 @@ function IncomeTabs({
   dividends,
   handleDividendDelete,
 }) {
-  const [activeTab, setActiveTab] = useState("record");
+  const [activeTab, setActiveTab] = useState("management");
   const [planningTab, setPlanningTab] = useState("forecast");
 
   return (
@@ -25,29 +25,39 @@ function IncomeTabs({
       <div className="mb-5">
         <h2 className="text-xl font-bold">Income</h2>
         <p className="mt-1 text-sm text-slate-400">
-          Record dividends, review income history, and plan future passive income.
+          Manage dividends, review income history, and plan future passive income.
         </p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
-        <TabButton active={activeTab === "record"} onClick={() => setActiveTab("record")}>
-          Record Dividend
+        <TabButton
+          active={activeTab === "management"}
+          onClick={() => setActiveTab("management")}
+        >
+          Dividend Management
         </TabButton>
 
-        <TabButton active={activeTab === "history"} onClick={() => setActiveTab("history")}>
-          Dividend History
-        </TabButton>
-
-        <TabButton active={activeTab === "planning"} onClick={() => setActiveTab("planning")}>
+        <TabButton
+          active={activeTab === "planning"}
+          onClick={() => setActiveTab("planning")}
+        >
           Income Planning
         </TabButton>
       </div>
 
-      {activeTab === "record" && (
+      {activeTab === "management" && (
         <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
-          <h2 className="mb-5 text-xl font-bold">Record Dividend Income</h2>
+          <div className="mb-5">
+            <h2 className="text-xl font-bold">Dividend Management</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Record dividend payouts and review your dividend history in one place.
+            </p>
+          </div>
 
-          <form onSubmit={handleDividendSubmit} className="grid gap-4 md:grid-cols-4">
+          <form
+            onSubmit={handleDividendSubmit}
+            className="mb-8 grid gap-4 md:grid-cols-4"
+          >
             <Input
               name="symbol"
               placeholder="Symbol"
@@ -78,38 +88,44 @@ function IncomeTabs({
               Add Dividend
             </button>
           </form>
-        </section>
-      )}
 
-      {activeTab === "history" && (
-        <DataTable title="Dividend History">
-          <thead className="bg-slate-800">
-            <tr>
-              <Th>Symbol</Th>
-              <Th>Amount</Th>
-              <Th>Date</Th>
-              <Th>Actions</Th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {dividends.map((dividend) => (
-              <tr key={dividend.id} className="border-t border-slate-800">
-                <Td>{dividend.symbol}</Td>
-                <Td positive>${dividend.amount.toFixed(2)}</Td>
-                <Td>{dividend.date}</Td>
-                <Td>
-                  <button
-                    onClick={() => handleDividendDelete(dividend.id)}
-                    className="rounded-md bg-red-600 px-3 py-1 hover:bg-red-500"
-                  >
-                    Delete
-                  </button>
-                </Td>
+          <DataTable title="Dividend History">
+            <thead className="bg-slate-800">
+              <tr>
+                <Th>Symbol</Th>
+                <Th>Amount</Th>
+                <Th>Date</Th>
+                <Th>Actions</Th>
               </tr>
-            ))}
-          </tbody>
-        </DataTable>
+            </thead>
+
+            <tbody>
+              {dividends.length === 0 ? (
+                <tr className="border-t border-slate-800">
+                  <Td colSpan={4}>
+                    No dividend records yet.
+                  </Td>
+                </tr>
+              ) : (
+                dividends.map((dividend) => (
+                  <tr key={dividend.id} className="border-t border-slate-800">
+                    <Td>{dividend.symbol}</Td>
+                    <Td positive>${Number(dividend.amount || 0).toFixed(2)}</Td>
+                    <Td>{dividend.date}</Td>
+                    <Td>
+                      <button
+                        onClick={() => handleDividendDelete(dividend.id)}
+                        className="rounded-md bg-red-600 px-3 py-1 hover:bg-red-500"
+                      >
+                        Delete
+                      </button>
+                    </Td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </DataTable>
+        </section>
       )}
 
       {activeTab === "planning" && (
@@ -122,19 +138,31 @@ function IncomeTabs({
           </div>
 
           <div className="mb-6 flex flex-wrap gap-2">
-            <TabButton active={planningTab === "forecast"} onClick={() => setPlanningTab("forecast")}>
+            <TabButton
+              active={planningTab === "forecast"}
+              onClick={() => setPlanningTab("forecast")}
+            >
               Forecast
             </TabButton>
 
-            <TabButton active={planningTab === "projection"} onClick={() => setPlanningTab("projection")}>
+            <TabButton
+              active={planningTab === "projection"}
+              onClick={() => setPlanningTab("projection")}
+            >
               Goal Projection
             </TabButton>
 
-            <TabButton active={planningTab === "snowball"} onClick={() => setPlanningTab("snowball")}>
+            <TabButton
+              active={planningTab === "snowball"}
+              onClick={() => setPlanningTab("snowball")}
+            >
               Snowball
             </TabButton>
 
-            <TabButton active={planningTab === "calendar"} onClick={() => setPlanningTab("calendar")}>
+            <TabButton
+              active={planningTab === "calendar"}
+              onClick={() => setPlanningTab("calendar")}
+            >
               Calendar
             </TabButton>
           </div>

@@ -5,17 +5,18 @@ import PortfolioInsightsPanel from "./PortfolioInsightsPanel";
 import InsightCard from "./InsightCard";
 import HealthBar from "./HealthBar";
 import DynamicOpportunities from "./DynamicOpportunities";
+import AIPortfolioInsights from "./AIPortfolioInsights";
 
 function DashboardInsightsTabs({
   performance,
   totalValue,
   netWorth,
+  trendData,
   monthlyPassiveIncome,
   monthlyIncomeGoal,
   dividendCalendar,
   totalDividends,
   portfolioGoal,
-  fireNumber,
   yieldOnCost,
   strengths,
   opportunities,
@@ -54,7 +55,7 @@ function DashboardInsightsTabs({
       <div className="mb-5">
         <h2 className="text-xl font-bold">Wealth Dashboard</h2>
         <p className="mt-1 text-sm text-slate-400">
-          Monitor portfolio overview, opportunities, health score, insights and recommendations.
+          Monitor portfolio overview, opportunities, health score, insights and AI analysis.
         </p>
       </div>
 
@@ -68,7 +69,7 @@ function DashboardInsightsTabs({
         </TabButton>
 
         <TabButton active={activeTab === "healthInsights"} onClick={() => setActiveTab("healthInsights")}>
-          Health & Insights
+          Health & AI Insights
         </TabButton>
 
         <TabButton active={activeTab === "assistant"} onClick={() => setActiveTab("assistant")}>
@@ -83,10 +84,10 @@ function DashboardInsightsTabs({
           portfolioGoal={portfolioGoal}
           monthlyPassiveIncome={monthlyPassiveIncome}
           monthlyIncomeGoal={monthlyIncomeGoal}
-          fireNumber={fireNumber}
           totalDividends={totalDividends}
           dividendCalendar={dividendCalendar}
           performance={performance}
+          trendData={trendData}
         />
       )}
 
@@ -200,6 +201,15 @@ function DashboardInsightsTabs({
               />
             </div>
           </section>
+
+          <AIPortfolioInsights
+            totalValue={totalValue}
+            totalDividends={totalDividends}
+            monthlyPassiveIncome={monthlyPassiveIncome}
+            portfolioGoal={portfolioGoal}
+            yieldOnCost={yieldOnCost}
+            performance={performance}
+          />
         </div>
       )}
 

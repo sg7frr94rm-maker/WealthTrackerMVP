@@ -1,14 +1,25 @@
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
 function WealthDashboardSummary({
   netWorth,
   portfolioValue,
   portfolioGoal,
   monthlyPassiveIncome,
-  monthlyIncomeGoal = 100,
-  fireNumber,
-  dividendCalendar = [],
-  performance = [],
+  monthlyIncomeGoal,
+  totalDividends,
+  dividendCalendar,
+  performance,
+  trendData = [],
 }) {
-  const goalProgress =
+  const portfolioProgress =
     portfolioGoal > 0 ? (portfolioValue / portfolioGoal) * 100 : 0;
 
   const incomeProgress =
@@ -16,107 +27,120 @@ function WealthDashboardSummary({
       ? (monthlyPassiveIncome / monthlyIncomeGoal) * 100
       : 0;
 
-  const largestPosition = [...performance].sort(
-    (a, b) => b.currentValue - a.currentValue
-  )[0];
-
-  const nextDividend = [...dividendCalendar]
+  const nextDividend = [...(dividendCalendar || [])]
     .filter((item) => new Date(item.expectedDate) >= new Date())
-    .sort(
-      (a, b) =>
-        new Date(a.expectedDate) - new Date(b.expectedDate)
-  )[0];
+    .sort((a, b) => new Date(a.expectedDate) - new Date(b.expectedDate))[0];
 
-  const incomeGap = Math.max(
-    0,
-    monthlyIncomeGoal - monthlyPassiveIncome
-  );
+  const largestHolding =
+    performance && performance.length > 0
+      ? [...performance].sort(
+          (a, b) => Number(b.currentValue || 0) - Number(a.currentValue || 0)
+        )[0]
+      : null;
+
+  const largestHoldingPercent =
+    largestHolding && portfolioValue > 0
+      ? (Number(largestHolding.currentValue || 0) / portfolioValue) * 100
+      : 0;
+
+  const formattedTrendData = (trendData || []).map((item) => ({
+    ...item,
+    value: Number(item.value || 0),
+  }));
 
   return (
-    <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-      <div className="mb-5">
-        <h2 className="text-xl font-bold">Wealth Dashboard Summary</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Quick overview of your current financial position.
-        </p>
-      </div>
+    <section className="space-y-6">
+      <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
+        <div className="mb-5">
+          <h2 className="text-xl font-bold">Wealth Dashboard Summary</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            High-level snapshot of your portfolio, wealth progress, income and upcoming activity.
+          </p>
+        </div>
 
-      <section className="mb-6 rounded-xl border border-emerald-800 bg-emerald-950/30 p-5">
-        <h3 className="mb-3 text-lg font-bold text-emerald-400">
-          Today's Briefing
-        </h3>
-
-        <div className="grid gap-3 text-sm md:grid-cols-2">
-          <BriefingItem
-            label="Largest Holding"
-            value={largestPosition?.symbol || "N/A"}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <SummaryCard
+            title="Net Worth"
+            value={`$${Number(netWorth || 0).toFixed(2)}`}
+            subtitle="Total assets minus liabilities"
           />
 
-          <BriefingItem
-            label="Next Dividend"
-            value={
+          <SummaryCard
+            title="Portfolio Value"
+            value={`$${Number(portfolioValue || 0).toFixed(2)}`}
+            subtitle={`Goal progress: ${portfolioProgress.toFixed(2)}%`}
+          />
+
+          <SummaryCard
+            title="Monthly Passive Income"
+            value={`$${Number(monthlyPassiveIncome || 0).toFixed(2)}`}
+            subtitle={`Income goal: ${incomeProgress.toFixed(2)}%`}
+          />
+
+          <SummaryCard
+            title="Total Dividends"
+            value={`$${Number(totalDividends || 0).toFixed(2)}`}
+            subtitle={
               nextDividend
-                ? `${nextDividend.symbol} — $${Number(
-                    nextDividend.expectedAmount || 0
-                  ).toFixed(2)}`
-                : "None Scheduled"
+                ? `Next: ${nextDividend.symbol} on ${nextDividend.expectedDate}`
+                : "No upcoming dividend"
             }
           />
         </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard title="Net Worth" value={`$${netWorth.toFixed(2)}`} positive />
+      {formattedTrendData.length > 0 && (
+        <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
+          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-bold">Growth Trend</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                Track how your portfolio value changes over time from saved snapshots.
+              </p>
+            </div>
 
-        <SummaryCard
-          title="Portfolio Value"
-          value={`$${portfolioValue.toFixed(2)}`}
-          positive
-        />
+            {largestHolding && (
+              <div className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm">
+                <p className="text-slate-400">Largest Holding</p>
+                <p className="font-bold text-slate-100">
+                  {largestHolding.symbol} — {largestHoldingPercent.toFixed(2)}%
+                </p>
+              </div>
+            )}
+          </div>
 
-        <SummaryCard
-          title="Goal Progress"
-          value={`${goalProgress.toFixed(2)}%`}
-          positive={goalProgress >= 50}
-        />
-
-        <SummaryCard
-          title="Monthly Income"
-          value={`$${monthlyPassiveIncome.toFixed(2)}`}
-          positive
-        />
-      </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={formattedTrendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="date" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" />
+                <Tooltip
+                  formatter={(value) => [`$${Number(value).toFixed(2)}`, "Portfolio Value"]}
+                  labelFormatter={(label) => `Date: ${label}`}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#10b981"
+                  strokeWidth={3}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+      )}
     </section>
   );
 }
 
-function BriefingItem({ label, value }) {
+function SummaryCard({ title, value, subtitle }) {
   return (
-    <div className="rounded-lg bg-slate-950/70 p-4">
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className="mt-1 font-bold text-slate-100">{value}</p>
-    </div>
-  );
-}
-
-function SummaryCard({ title, value, positive }) {
-  const hasColor = positive !== undefined;
-
-  return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
       <p className="text-sm text-slate-400">{title}</p>
-
-      <p
-        className={`mt-2 text-2xl font-bold ${
-          hasColor
-            ? positive
-              ? "text-emerald-400"
-              : "text-yellow-400"
-            : "text-white"
-        }`}
-      >
-        {value}
-      </p>
+      <p className="mt-2 text-2xl font-bold text-slate-100">{value}</p>
+      <p className="mt-2 text-xs text-slate-500">{subtitle}</p>
     </div>
   );
 }

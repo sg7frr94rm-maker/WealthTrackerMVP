@@ -114,3 +114,6 @@ export const backupDatabase = async () => {
 
   window.URL.revokeObjectURL(url);
 };
+
+export const generateAiPortfolioInsights = (payload) =>
+  axios.post(`${API_URL}/portfolio/ai-insights`, payload);

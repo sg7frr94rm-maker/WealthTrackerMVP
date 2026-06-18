@@ -1,14 +1,14 @@
 import { useState } from "react";
-
 import PortfolioGoalEditor from "./PortfolioGoalEditor";
 import ProjectionCalculator from "./ProjectionCalculator";
 import YearsToGoal from "./YearsToGoal";
-import FireCalculator from "./FireCalculator";
 import RebalancingPlanner from "./RebalancingPlanner";
+import PortfolioStressTest from "./PortfolioStressTest";
 
 function GoalsTabs({
   portfolioGoal,
   totalValue,
+  netWorth,
   goalProgress,
   updatePortfolioGoal,
   fetchData,
@@ -24,7 +24,7 @@ function GoalsTabs({
         </h2>
 
         <p className="mt-1 text-sm text-slate-400">
-          Manage portfolio goals, projections, FIRE planning and rebalancing.
+          Manage portfolio goals, projections and rebalancing.
         </p>
       </div>
 
@@ -44,10 +44,10 @@ function GoalsTabs({
         </TabButton>
 
         <TabButton
-          active={activeTab === "fire"}
-          onClick={() => setActiveTab("fire")}
+          active={activeTab === "stress"}
+          onClick={() => setActiveTab("stress")}
         >
-          FIRE
+          Stress Test
         </TabButton>
 
         <TabButton
@@ -101,29 +101,31 @@ function GoalsTabs({
             updatePortfolioGoal={updatePortfolioGoal}
             onSaved={fetchData}
           />
+          
+          <div className="mt-8">
+            <YearsToGoal
+              currentValue={totalValue}
+              portfolioGoal={portfolioGoal}
+            />
+          </div>
         </section>
       )}
 
       {/* PROJECTION */}
       {activeTab === "projection" && (
-        <>
           <ProjectionCalculator
             currentValue={totalValue}
             portfolioGoal={portfolioGoal}
           />
-
-          <YearsToGoal
-            currentValue={totalValue}
-            portfolioGoal={portfolioGoal}
-          />
-        </>
       )}
 
-      {/* FIRE */}
-      {activeTab === "fire" && (
-        <FireCalculator
-          currentValue={totalValue}
-        />
+      {/* STRESS TEST */}
+      {activeTab === "stress" && (
+          <PortfolioStressTest
+            portfolioValue={totalValue}
+            netWorth={netWorth}
+            portfolioGoal={portfolioGoal}
+          />
       )}
 
       {/* REBALANCING */}

@@ -9,7 +9,6 @@ function MilestoneTabs({
   totalDividends,
   monthlyPassiveIncome,
   netWorth,
-  fireProgress,
 }) {
   const [activeTab, setActiveTab] = useState("progress");
 
@@ -51,7 +50,6 @@ function MilestoneTabs({
           portfolioGoal={portfolioGoal}
           totalDividends={totalDividends}
           monthlyPassiveIncome={monthlyPassiveIncome}
-          fireProgress={fireProgress}
         />
       )}
 
@@ -67,7 +65,6 @@ function MilestoneTabs({
           portfolioValue={portfolioValue}
           netWorth={netWorth}
           totalDividends={totalDividends}
-          fireProgress={fireProgress}
         />
       )}
     </section>
