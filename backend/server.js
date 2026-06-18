@@ -1200,6 +1200,53 @@ function getNewsImpact(title) {
   return "Neutral";
 }
 
+app.get("/opportunities", async (req, res) => {
+  try {
+    const opportunities = [
+      {
+        ticker: "SCHD",
+        score: 8.8,
+        role: "Dividend Growth",
+        risk: "Medium",
+        reason: "Strong dividend growth and suitable for income investors",
+      },
+      {
+        ticker: "VOO",
+        score: 8.5,
+        role: "Core Market ETF",
+        risk: "Medium",
+        reason: "Broad US market exposure with strong long-term performance",
+      },
+      {
+        ticker: "VNQ",
+        score: 8.1,
+        role: "REIT Diversifier",
+        risk: "Medium",
+        reason: "Improves portfolio diversification through real estate exposure",
+      },
+      {
+        ticker: "JEPI",
+        score: 7.9,
+        role: "Monthly Income",
+        risk: "Medium",
+        reason: "Provides consistent monthly distributions",
+      },
+      {
+        ticker: "QQQ",
+        score: 7.7,
+        role: "Growth ETF",
+        risk: "High",
+        reason: "Technology-heavy growth exposure",
+      },
+    ];
+
+    res.json(opportunities);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load opportunities" });
+  }
+});
+
 app.get("/target-allocations", (req, res) => {
   const rows = db
     .prepare("SELECT symbol, targetPercent FROM target_allocations")

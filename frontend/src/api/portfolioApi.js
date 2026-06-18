@@ -83,6 +83,9 @@ export const downloadWealthReport = () =>
 export const getMarketNews = () =>
   axios.get(`${API_URL}/news`);
 
+export const getOpportunities = () =>
+  axios.get(`${API_URL}/opportunities`);
+
 export const getTargetAllocations = () =>
   axios.get(`${API_URL}/target-allocations`);
 

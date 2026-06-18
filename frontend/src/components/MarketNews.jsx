@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getMarketNews } from "../api/portfolioApi";
+import Opportunities from "./Opportunities";
 
 function MarketNews() {
   const [news, setNews] = useState([]);
@@ -46,6 +47,7 @@ function MarketNews() {
       : "Neutral";
 
   return (
+    <>
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
@@ -132,6 +134,11 @@ function MarketNews() {
         </div>
       )}
     </section>
+
+        <div className="mt-8">
+      <Opportunities />
+    </div>
+  </>
   );
 }
 
