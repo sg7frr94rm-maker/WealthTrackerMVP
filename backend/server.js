@@ -8,6 +8,8 @@ const PDFDocument = require("pdfkit");
 const Parser = require("rss-parser");
 const parser = new Parser();
 
+const aiInsightsRoutes = require("./routes/aiInsights");
+
 const PORT = process.env.PORT || 3000;
 const FRONTEND_URL =
   process.env.FRONTEND_URL || "http://localhost:5173";
@@ -22,6 +24,8 @@ app.use(
   })
 );
 app.use(express.json());
+
+app.use("/", aiInsightsRoutes);
 
 const fs = require("fs");
 const path = require("path");
@@ -165,10 +169,25 @@ db.prepare(`
    PRICE FUNCTION
 ========================= */
 
+/* =========================
+   PRICE FUNCTION
+========================= */
+
+/* =========================
+   PRICE FUNCTION
+========================= */
+
+const forceManualSymbols = ["FKIQX"];
+
 async function getYahooPrice(symbol) {
-  if (manualPrices[symbol]) return manualPrices[symbol];
+  if (forceManualSymbols.includes(symbol)) {
+    return manualPrices[symbol] || 0;
+  }
 
   const yahooSymbols = {
+    FKIQX: "FKIQX",
+    "0P0001EDGU.SI": "0P0001EDGU.SI",
+    "0P00013206.SI": "0P00013206.SI",
     VWRA: "VWRA.L",
     CSPX: "CSPX.L",
     VOO: "VOO",
@@ -179,21 +198,30 @@ async function getYahooPrice(symbol) {
     SWRD: "SWRD.L",
     ES3: "ES3.SI",
     STI: "ES3.SI",
-    FKIQX: "FKIQX",
   };
 
-  const yahooSymbol = yahooSymbols[symbol];
-  if (!yahooSymbol) return 0;
+  const yahooSymbol = yahooSymbols[symbol] || symbol;
 
   try {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}`;
     const response = await fetch(url);
     const data = await response.json();
 
-    return data?.chart?.result?.[0]?.meta?.regularMarketPrice || 0;
+    const price =
+      data?.chart?.result?.[0]?.meta?.regularMarketPrice ||
+      data?.chart?.result?.[0]?.meta?.previousClose ||
+      data?.chart?.result?.[0]?.meta?.chartPreviousClose ||
+      0;
+
+    if (price > 0) {
+      return price;
+    }
+
+    console.log(`Yahoo price unavailable for ${symbol}, using manual fallback`);
+    return manualPrices[symbol] || 0;
   } catch (error) {
     console.error(`Error fetching ${symbol}:`, error.message);
-    return 0;
+    return manualPrices[symbol] || 0;
   }
 }
 
