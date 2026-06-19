@@ -21,8 +21,8 @@ function DividendSnowballSimulator({
 
   const projectionData = [];
 
-  let portfolioValue = currentPortfolioValue;
-  let annualDividend = currentAnnualDividend;
+  let portfolioValue = Number(currentPortfolioValue || 0);
+  let annualDividend = Number(currentAnnualDividend || 0);
 
   for (let year = 0; year <= years; year++) {
     projectionData.push({
@@ -32,20 +32,15 @@ function DividendSnowballSimulator({
       monthlyIncome: Number((annualDividend / 12).toFixed(2)),
     });
 
-    const yearlyContribution = monthlyInvestment * 12;
+    const yearlyContribution = Number(monthlyInvestment || 0) * 12;
     const reinvestedDividend = reinvestDividends ? annualDividend : 0;
 
     portfolioValue =
-      portfolioValue +
-      yearlyContribution +
-      reinvestedDividend;
+      portfolioValue + yearlyContribution + reinvestedDividend;
 
+    annualDividend = portfolioValue * (Number(dividendYield || 0) / 100);
     annualDividend =
-      portfolioValue * (dividendYield / 100);
-
-    annualDividend =
-      annualDividend *
-      (1 + dividendGrowthRate / 100);
+      annualDividend * (1 + Number(dividendGrowthRate || 0) / 100);
   }
 
   const year5 = projectionData.find((item) => item.year === 5);
@@ -53,18 +48,8 @@ function DividendSnowballSimulator({
   const finalYear = projectionData[projectionData.length - 1];
 
   return (
-    <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-      <div className="mb-5">
-        <h2 className="text-xl font-bold">
-          Dividend Snowball Simulator
-        </h2>
-
-        <p className="mt-1 text-sm text-slate-400">
-          Project how dividend income may grow over time through contributions, yield, growth, and reinvestment.
-        </p>
-      </div>
-
-      <div className="mb-6 grid gap-4 md:grid-cols-5">
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-5">
         <InputBox
           label="Monthly Investment"
           value={monthlyInvestment}
@@ -95,6 +80,7 @@ function DividendSnowballSimulator({
           </label>
 
           <button
+            type="button"
             onClick={() => setReinvestDividends(!reinvestDividends)}
             className={`h-12 w-full rounded-lg font-semibold ${
               reinvestDividends
@@ -107,36 +93,34 @@ function DividendSnowballSimulator({
         </div>
       </div>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-4">
         <SnowballCard
           title="Current Annual Dividend"
-          value={`$${currentAnnualDividend.toFixed(2)}`}
+          value={`$${Number(currentAnnualDividend || 0).toFixed(2)}`}
           positive
         />
 
         <SnowballCard
           title="Year 5 Annual Dividend"
-          value={`$${(year5?.annualDividend || 0).toFixed(2)}`}
+          value={`$${Number(year5?.annualDividend || 0).toFixed(2)}`}
           positive
         />
 
         <SnowballCard
           title="Year 10 Annual Dividend"
-          value={`$${(year10?.annualDividend || 0).toFixed(2)}`}
+          value={`$${Number(year10?.annualDividend || 0).toFixed(2)}`}
           positive
         />
 
         <SnowballCard
           title={`Year ${years} Annual Dividend`}
-          value={`$${finalYear.annualDividend.toFixed(2)}`}
+          value={`$${Number(finalYear?.annualDividend || 0).toFixed(2)}`}
           positive
         />
       </div>
 
-      <div className="mb-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
-        <h3 className="mb-4 font-bold">
-          Dividend Income Growth
-        </h3>
+      <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+        <h3 className="mb-4 font-bold">Dividend Income Growth</h3>
 
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -177,31 +161,26 @@ function DividendSnowballSimulator({
 
           <tbody>
             {projectionData.map((item) => (
-              <tr
-                key={item.year}
-                className="border-b border-slate-800"
-              >
-                <td className="p-3">
-                  Year {item.year}
-                </td>
+              <tr key={item.year} className="border-b border-slate-800">
+                <td className="p-3">Year {item.year}</td>
 
                 <td className="p-3">
-                  ${item.portfolioValue.toLocaleString()}
+                  ${Number(item.portfolioValue || 0).toLocaleString()}
                 </td>
 
                 <td className="p-3 font-semibold text-emerald-400">
-                  ${item.annualDividend.toLocaleString()}
+                  ${Number(item.annualDividend || 0).toLocaleString()}
                 </td>
 
                 <td className="p-3 font-semibold text-blue-400">
-                  ${item.monthlyIncome.toLocaleString()}
+                  ${Number(item.monthlyIncome || 0).toLocaleString()}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -225,9 +204,7 @@ function InputBox({ label, value, onChange }) {
 function SnowballCard({ title, value, positive }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-      <p className="text-sm text-slate-400">
-        {title}
-      </p>
+      <p className="text-sm text-slate-400">{title}</p>
 
       <p
         className={`mt-2 text-2xl font-bold ${

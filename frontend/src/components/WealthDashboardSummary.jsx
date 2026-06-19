@@ -18,6 +18,10 @@ function WealthDashboardSummary({
   dividendCalendar,
   performance,
   trendData = [],
+  totalReturnPercent = 0,
+  goalProgress = 0,
+  bestPerformer,
+  worstPerformer,
 }) {
   const portfolioProgress =
     portfolioGoal > 0 ? (portfolioValue / portfolioGoal) * 100 : 0;
@@ -52,9 +56,10 @@ function WealthDashboardSummary({
     <section className="space-y-6">
       <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
         <div className="mb-5">
-          <h2 className="text-xl font-bold">Wealth Dashboard Summary</h2>
+          <h2 className="text-xl font-bold">Wealth Overview</h2>
           <p className="mt-1 text-sm text-slate-400">
-            High-level snapshot of your portfolio, wealth progress, income and upcoming activity.
+            High-level snapshot of your net worth, portfolio progress, passive
+            income and investment performance.
           </p>
         </div>
 
@@ -86,6 +91,42 @@ function WealthDashboardSummary({
                 : "No upcoming dividend"
             }
           />
+
+          <SummaryCard
+            title="Total Return"
+            value={`${Number(totalReturnPercent || 0).toFixed(2)}%`}
+            subtitle="Profit/loss plus dividends"
+            positive={Number(totalReturnPercent || 0) >= 0}
+          />
+
+          <SummaryCard
+            title="Goal Progress"
+            value={`${Number(goalProgress || 0).toFixed(2)}%`}
+            subtitle="Towards portfolio goal"
+            positive={Number(goalProgress || 0) >= 50}
+          />
+
+          <SummaryCard
+            title="Best Performer"
+            value={bestPerformer?.symbol || "-"}
+            subtitle={
+              bestPerformer
+                ? `${Number(bestPerformer.profitLossPercent || 0).toFixed(2)}%`
+                : "No holdings yet"
+            }
+            positive={Number(bestPerformer?.profitLossPercent || 0) >= 0}
+          />
+
+          <SummaryCard
+            title="Worst Performer"
+            value={worstPerformer?.symbol || "-"}
+            subtitle={
+              worstPerformer
+                ? `${Number(worstPerformer.profitLossPercent || 0).toFixed(2)}%`
+                : "No holdings yet"
+            }
+            positive={Number(worstPerformer?.profitLossPercent || 0) >= 0}
+          />
         </div>
       </section>
 
@@ -95,7 +136,8 @@ function WealthDashboardSummary({
             <div>
               <h2 className="text-xl font-bold">Growth Trend</h2>
               <p className="mt-1 text-sm text-slate-400">
-                Track how your portfolio value changes over time from saved snapshots.
+                Track how your portfolio value changes over time from saved
+                snapshots.
               </p>
             </div>
 
@@ -116,7 +158,10 @@ function WealthDashboardSummary({
                 <XAxis dataKey="date" stroke="#94a3b8" />
                 <YAxis stroke="#94a3b8" />
                 <Tooltip
-                  formatter={(value) => [`$${Number(value).toFixed(2)}`, "Portfolio Value"]}
+                  formatter={(value) => [
+                    `$${Number(value).toFixed(2)}`,
+                    "Portfolio Value",
+                  ]}
                   labelFormatter={(label) => `Date: ${label}`}
                 />
                 <Line
@@ -135,11 +180,19 @@ function WealthDashboardSummary({
   );
 }
 
-function SummaryCard({ title, value, subtitle }) {
+function SummaryCard({ title, value, subtitle, positive = true }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
       <p className="text-sm text-slate-400">{title}</p>
-      <p className="mt-2 text-2xl font-bold text-slate-100">{value}</p>
+
+      <p
+        className={`mt-2 text-2xl font-bold ${
+          positive ? "text-emerald-400" : "text-red-400"
+        }`}
+      >
+        {value}
+      </p>
+
       <p className="mt-2 text-xs text-slate-500">{subtitle}</p>
     </div>
   );

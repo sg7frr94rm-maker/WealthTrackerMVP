@@ -1,25 +1,16 @@
 import { useState } from "react";
-import WealthDashboardSummary from "./WealthDashboardSummary";
-import PortfolioAssistant from "./PortfolioAssistant";
-import PortfolioInsightsPanel from "./PortfolioInsightsPanel";
 import InsightCard from "./InsightCard";
 import HealthBar from "./HealthBar";
-import DynamicOpportunities from "./DynamicOpportunities";
 import AIPortfolioInsights from "./AIPortfolioInsights";
 
 function DashboardInsightsTabs({
   performance,
   totalValue,
-  netWorth,
-  trendData,
   monthlyPassiveIncome,
-  monthlyIncomeGoal,
   dividendCalendar,
   totalDividends,
   portfolioGoal,
   yieldOnCost,
-  strengths,
-  opportunities,
   riskLevel,
   overallHealthScore,
   diversificationScore,
@@ -29,7 +20,7 @@ function DashboardInsightsTabs({
   bestPerformer,
   worstPerformer,
 }) {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeInsightTab, setActiveInsightTab] = useState("review");
 
   const allReturnsZero =
     performance.length > 1 &&
@@ -53,56 +44,29 @@ function DashboardInsightsTabs({
   return (
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
       <div className="mb-5">
-        <h2 className="text-xl font-bold">Wealth Dashboard</h2>
+        <h2 className="text-xl font-bold">Portfolio Insights</h2>
         <p className="mt-1 text-sm text-slate-400">
-          Monitor portfolio overview, opportunities, health score, insights and AI analysis.
+          Review portfolio health, key metrics and AI-generated analysis.
         </p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
-        <TabButton active={activeTab === "overview"} onClick={() => setActiveTab("overview")}>
-          Overview
+        <TabButton
+          active={activeInsightTab === "review"}
+          onClick={() => setActiveInsightTab("review")}
+        >
+          Portfolio Review
         </TabButton>
 
-        <TabButton active={activeTab === "opportunities"} onClick={() => setActiveTab("opportunities")}>
-          Opportunities
-        </TabButton>
-
-        <TabButton active={activeTab === "healthInsights"} onClick={() => setActiveTab("healthInsights")}>
-          Health & AI Insights
-        </TabButton>
-
-        <TabButton active={activeTab === "assistant"} onClick={() => setActiveTab("assistant")}>
-          Assistant
+        <TabButton
+          active={activeInsightTab === "ai"}
+          onClick={() => setActiveInsightTab("ai")}
+        >
+          AI Analysis
         </TabButton>
       </div>
 
-      {activeTab === "overview" && (
-        <WealthDashboardSummary
-          netWorth={netWorth}
-          portfolioValue={totalValue}
-          portfolioGoal={portfolioGoal}
-          monthlyPassiveIncome={monthlyPassiveIncome}
-          monthlyIncomeGoal={monthlyIncomeGoal}
-          totalDividends={totalDividends}
-          dividendCalendar={dividendCalendar}
-          performance={performance}
-          trendData={trendData}
-        />
-      )}
-
-      {activeTab === "opportunities" && (
-        <DynamicOpportunities
-          performance={performance}
-          totalValue={totalValue}
-          yieldOnCost={yieldOnCost}
-          monthlyPassiveIncome={monthlyPassiveIncome}
-          monthlyIncomeGoal={monthlyIncomeGoal}
-          portfolioGoal={portfolioGoal}
-        />
-      )}
-
-      {activeTab === "healthInsights" && (
+      {activeInsightTab === "review" && (
         <div className="space-y-6">
           <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -127,7 +91,7 @@ function DashboardInsightsTabs({
           </section>
 
           <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
-            <h2 className="mb-5 text-xl font-bold">Portfolio Insights</h2>
+            <h2 className="mb-5 text-xl font-bold">Portfolio Snapshot</h2>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <InsightCard
@@ -167,7 +131,9 @@ function DashboardInsightsTabs({
                 label="Next Dividend"
                 value={
                   nextDividend
-                    ? `${nextDividend.symbol} — $${Number(nextDividend.expectedAmount).toFixed(2)}`
+                    ? `${nextDividend.symbol} — $${Number(
+                        nextDividend.expectedAmount
+                      ).toFixed(2)}`
                     : "No Upcoming Dividend"
                 }
                 positive
@@ -180,7 +146,9 @@ function DashboardInsightsTabs({
 
               <InsightCard
                 label="Rebalancing Status"
-                value={largestAllocation > 40 ? "Review Allocation" : "Healthy Allocation"}
+                value={
+                  largestAllocation > 40 ? "Review Allocation" : "Healthy Allocation"
+                }
                 positive={largestAllocation <= 40}
               />
 
@@ -201,33 +169,18 @@ function DashboardInsightsTabs({
               />
             </div>
           </section>
-
-          <AIPortfolioInsights
-            totalValue={totalValue}
-            totalDividends={totalDividends}
-            monthlyPassiveIncome={monthlyPassiveIncome}
-            portfolioGoal={portfolioGoal}
-            yieldOnCost={yieldOnCost}
-            performance={performance}
-          />
         </div>
       )}
 
-      {activeTab === "assistant" && (
-        <div className="space-y-6">
-          <PortfolioAssistant
-            totalValue={totalValue}
-            totalDividends={totalDividends}
-            monthlyPassiveIncome={monthlyPassiveIncome}
-            portfolioGoal={portfolioGoal}
-            performance={performance}
-          />
-
-          <PortfolioInsightsPanel
-            strengths={strengths}
-            opportunities={opportunities}
-          />
-        </div>
+      {activeInsightTab === "ai" && (
+        <AIPortfolioInsights
+          totalValue={totalValue}
+          totalDividends={totalDividends}
+          monthlyPassiveIncome={monthlyPassiveIncome}
+          portfolioGoal={portfolioGoal}
+          yieldOnCost={yieldOnCost}
+          performance={performance}
+        />
       )}
     </section>
   );

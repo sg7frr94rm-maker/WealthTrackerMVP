@@ -165,13 +165,6 @@ db.prepare(`
   VALUES ('portfolioGoal', '100000')
 `).run();
 
-/* =========================
-   PRICE FUNCTION
-========================= */
-
-/* =========================
-   PRICE FUNCTION
-========================= */
 
 /* =========================
    PRICE FUNCTION
@@ -1228,50 +1221,137 @@ function getNewsImpact(title) {
   return "Neutral";
 }
 
+function calculateOpportunityMarketImpact(opportunity) {
+  const positiveThemes = [
+    "technology",
+    "growth",
+    "ai",
+    "dividend",
+    "income",
+    "reit",
+    "real estate",
+    "property",
+    "rate cut",
+    "interest rate",
+  ];
+
+  const matchedThemes = opportunity.themes.filter((theme) =>
+    positiveThemes.includes(theme.toLowerCase())
+  );
+
+  const relatedNewsCount = matchedThemes.length;
+
+  let marketImpact = "Neutral";
+  let scoreBoost = 0;
+
+  if (relatedNewsCount >= 2) {
+    marketImpact = "Positive";
+    scoreBoost = 0.4;
+  } else if (relatedNewsCount === 1) {
+    marketImpact = "Neutral";
+    scoreBoost = 0.1;
+  }
+
+  return {
+    marketImpact,
+    relatedNewsCount,
+    scoreBoost,
+    marketReasons: matchedThemes.map(
+      (theme) =>
+        `${theme.charAt(0).toUpperCase() + theme.slice(1)} theme is currently relevant to market conditions`
+    ),
+  };
+}
+
 app.get("/opportunities", async (req, res) => {
   try {
+    const newsResponse = await fetch(
+      "http://localhost:3000/news"
+    );
+
+    const allNews = await newsResponse.json();
+
     const opportunities = [
       {
         ticker: "SCHD",
         score: 8.8,
         role: "Dividend Growth",
         risk: "Medium",
-        reason: "Strong dividend growth and suitable for income investors",
+        reason:
+          "Strong dividend growth and suitable for income investors",
+        themes: ["dividend", "income"],
       },
       {
         ticker: "VOO",
         score: 8.5,
         role: "Core Market ETF",
         risk: "Medium",
-        reason: "Broad US market exposure with strong long-term performance",
+        reason:
+          "Broad US market exposure with strong long-term performance",
+        themes: ["market", "equity", "sp500"],
       },
       {
         ticker: "VNQ",
         score: 8.1,
         role: "REIT Diversifier",
         risk: "Medium",
-        reason: "Improves portfolio diversification through real estate exposure",
+        reason:
+          "Improves portfolio diversification through real estate exposure",
+        themes: ["reit", "real estate", "property"],
       },
       {
         ticker: "JEPI",
         score: 7.9,
         role: "Monthly Income",
         risk: "Medium",
-        reason: "Provides consistent monthly distributions",
+        reason:
+          "Provides consistent monthly distributions",
+        themes: ["income", "dividend"],
       },
       {
         ticker: "QQQ",
         score: 7.7,
         role: "Growth ETF",
         risk: "High",
-        reason: "Technology-heavy growth exposure",
+        reason:
+          "Technology-heavy growth exposure",
+        themes: ["technology", "growth", "ai"],
       },
     ];
 
-    res.json(opportunities);
+    const enhanced = opportunities.map((item) => {
+      const relatedNews = allNews.filter((news) => {
+        const text =
+          `${news.title} ${news.relatedTo}`.toLowerCase();
+
+        return item.themes.some((theme) =>
+          text.includes(theme.toLowerCase())
+        );
+      });
+
+      return {
+        ticker: item.ticker,
+        role: item.role,
+        risk: item.risk,
+        reason: item.reason,
+        score: item.score,
+        marketImpact:
+          relatedNews.some((n) => n.impact === "Positive")
+            ? "Positive"
+            : "Neutral",
+        relatedNewsCount: relatedNews.length,
+
+        relatedNews: relatedNews.slice(0, 5),
+      };
+    });
+
+    res.json(enhanced);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to load opportunities" });
+
+    res.status(500).json({
+      error: "Failed to load opportunities",
+    });
   }
 });
 

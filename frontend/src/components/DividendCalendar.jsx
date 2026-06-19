@@ -7,40 +7,7 @@ import {
 
 function DividendCalendar() {
   const [items, setItems] = useState([]);
-  const totalUpcoming = items.reduce(
-  (sum, item) => sum + Number(item.expectedAmount || 0),
-  0
-);
 
-const next30Days = items
-  .filter((item) => {
-    const today = new Date();
-    const target = new Date(item.expectedDate);
-
-    const diffDays =
-      (target - today) / (1000 * 60 * 60 * 24);
-
-    return diffDays >= 0 && diffDays <= 30;
-  })
-  .reduce(
-    (sum, item) => sum + Number(item.expectedAmount || 0),
-    0
-  );
-
-const next90Days = items
-  .filter((item) => {
-    const today = new Date();
-    const target = new Date(item.expectedDate);
-
-    const diffDays =
-      (target - today) / (1000 * 60 * 60 * 24);
-
-    return diffDays >= 0 && diffDays <= 90;
-  })
-  .reduce(
-    (sum, item) => sum + Number(item.expectedAmount || 0),
-    0
-  );
   const [form, setForm] = useState({
     symbol: "",
     expectedAmount: "",
@@ -48,9 +15,23 @@ const next90Days = items
     notes: "",
   });
 
+  const totalUpcoming = items.reduce(
+    (sum, item) => sum + Number(item.expectedAmount || 0),
+    0
+  );
+
+  const next30Days = items
+    .filter((item) => {
+      const today = new Date();
+      const target = new Date(item.expectedDate);
+      const diffDays = (target - today) / (1000 * 60 * 60 * 24);
+      return diffDays >= 0 && diffDays <= 30;
+    })
+    .reduce((sum, item) => sum + Number(item.expectedAmount || 0), 0);
+
   const loadCalendar = async () => {
     const res = await getDividendCalendar();
-    setItems(res.data);
+    setItems(res.data || []);
   };
 
   useEffect(() => {
@@ -68,7 +49,7 @@ const next90Days = items
     e.preventDefault();
 
     await addDividendCalendarItem({
-      symbol: form.symbol,
+      symbol: form.symbol.toUpperCase(),
       expectedAmount: Number(form.expectedAmount),
       expectedDate: form.expectedDate,
       notes: form.notes,
@@ -90,41 +71,26 @@ const next90Days = items
   };
 
   return (
-    <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-      <h2 className="mb-5 text-xl font-bold">Dividend Calendar</h2>
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
-  <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-    <p className="text-sm text-slate-400">
-      Total Upcoming Dividends
-    </p>
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        <SummaryCard
+          title="Total Upcoming Dividends"
+          value={`$${totalUpcoming.toFixed(2)}`}
+        />
 
-    <p className="mt-2 text-2xl font-bold text-emerald-400">
-      ${totalUpcoming.toFixed(2)}
-    </p>
-  </div>
+        <SummaryCard
+          title="Next 30 Days"
+          value={`$${next30Days.toFixed(2)}`}
+        />
 
-  <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-    <p className="text-sm text-slate-400">
-      Next 30 Days
-    </p>
+        <SummaryCard
+          title="Upcoming Events"
+          value={items.length}
+          neutral
+        />
+      </div>
 
-    <p className="mt-2 text-2xl font-bold text-emerald-400">
-      ${next30Days.toFixed(2)}
-    </p>
-  </div>
-
-  <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-    <p className="text-sm text-slate-400">
-      Upcoming Events
-    </p>
-
-    <p className="mt-2 text-2xl font-bold text-white">
-      {items.length}
-    </p>
-  </div>
-</div>
-
-      <form onSubmit={handleAdd} className="mb-6 grid gap-3 md:grid-cols-5">
+      <form onSubmit={handleAdd} className="grid gap-3 md:grid-cols-5">
         <input
           name="symbol"
           value={form.symbol}
@@ -209,7 +175,22 @@ const next90Days = items
           </tbody>
         </table>
       </div>
-    </section>
+    </div>
+  );
+}
+
+function SummaryCard({ title, value, neutral = false }) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+      <p className="text-sm text-slate-400">{title}</p>
+      <p
+        className={`mt-2 text-2xl font-bold ${
+          neutral ? "text-white" : "text-emerald-400"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
   );
 }
 

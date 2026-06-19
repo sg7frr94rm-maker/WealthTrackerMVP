@@ -24,14 +24,14 @@ import MetricCard from "./components/MetricCard";
 import { AnimatePresence, motion } from "framer-motion";
 import MarketNews from "./components/MarketNews";
 import MilestoneTabs from "./components/MilestoneTabs";
-import IncomeTabs from "./components/IncomeTabs";
 import WealthTabs from "./components/WealthTabs";
 import PortfolioTabs from "./components/PortfolioTabs";
 import DashboardInsightsTabs from "./components/DashboardInsightsTabs";
 import GoalsTabs from "./components/GoalsTabs";
+import WealthDashboardSummary from "./components/WealthDashboardSummary";
 
 function App() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("wealth");
   const [performance, setPerformance] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [trendData, setTrendData] = useState([]);
@@ -40,11 +40,12 @@ function App() {
   const [stats, setStats] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [portfolioGoal, setPortfolioGoal] = useState(100000);
+
   const [netWorthData, setNetWorthData] = useState({
-  cash: 0,
-  cpf: 0,
-  otherAssets: 0,
-  loans: 0,
+    cash: 0,
+    cpf: 0,
+    otherAssets: 0,
+    loans: 0,
   });
 
   const [form, setForm] = useState({
@@ -62,37 +63,38 @@ function App() {
   });
 
   const fetchData = async () => {
-  try {
-    const [
-      performanceRes,
-      transactionsRes,
-      trendRes,
-      dividendsRes,
-      statsRes,
-      settingsRes,
-      dividendCalendarRes,
-      netWorthRes,
-    ] = await Promise.all([
-      getPerformance(),
-      getTransactions(),
-      getTrend(),
-      getDividends(),
-      getStats(),
-      getSettings(),
-      getDividendCalendar(),
-      getNetWorthSettings(),
-    ]);
-    setPerformance(performanceRes.data.performance);
-    setTransactions(transactionsRes.data.data);
-    setTrendData(trendRes.data);
-    setDividends(dividendsRes.data.data);
-    setStats(statsRes.data);
-    setPortfolioGoal(settingsRes.data.portfolioGoal);
-    setDividendCalendar(dividendCalendarRes.data || []);
-    setNetWorthData(netWorthRes.data);
-  } catch (error) {
-    console.error("Failed to load dashboard data", error);
-  }
+    try {
+      const [
+        performanceRes,
+        transactionsRes,
+        trendRes,
+        dividendsRes,
+        statsRes,
+        settingsRes,
+        dividendCalendarRes,
+        netWorthRes,
+      ] = await Promise.all([
+        getPerformance(),
+        getTransactions(),
+        getTrend(),
+        getDividends(),
+        getStats(),
+        getSettings(),
+        getDividendCalendar(),
+        getNetWorthSettings(),
+      ]);
+
+      setPerformance(performanceRes.data.performance);
+      setTransactions(transactionsRes.data.data);
+      setTrendData(trendRes.data);
+      setDividends(dividendsRes.data.data);
+      setStats(statsRes.data);
+      setPortfolioGoal(settingsRes.data.portfolioGoal);
+      setDividendCalendar(dividendCalendarRes.data || []);
+      setNetWorthData(netWorthRes.data);
+    } catch (error) {
+      console.error("Failed to load dashboard data", error);
+    }
   };
 
   useEffect(() => {
@@ -127,28 +129,27 @@ function App() {
       buyDate: form.buyDate,
     };
 
-    if (editingId) {
-      await updateTransaction(editingId, payload);
-      setEditingId(null);
-    } else {
-      try {
+    try {
+      if (editingId) {
+        await updateTransaction(editingId, payload);
+        setEditingId(null);
+      } else {
         await addTransaction(payload);
-        fetchData();
-          } catch (error) {
-            console.error(error);
-            alert("Failed to save transaction");
-          }
+      }
+
+      setForm({
+        symbol: "",
+        type: "ETF",
+        units: "",
+        buyPrice: "",
+        buyDate: "",
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to save transaction");
     }
-
-    setForm({
-      symbol: "",
-      type: "ETF",
-      units: "",
-      buyPrice: "",
-      buyDate: "",
-    });
-
-    fetchData();
   };
 
   const handleDividendSubmit = async (e) => {
@@ -200,17 +201,13 @@ function App() {
   const yieldOnCost = stats?.yieldOnCost || 0;
   const totalDividendIncome = stats?.annualDividendIncome || 0;
   const monthlyPassiveIncome = stats?.monthlyPassiveIncome || 0;
+
   const cash = Number(netWorthData.cash || 0);
   const cpf = Number(netWorthData.cpf || 0);
   const otherAssets = Number(netWorthData.otherAssets || 0);
   const loans = Number(netWorthData.loans || 0);
 
-  const netWorth =
-    totalValue +
-    cash +
-    cpf +
-    otherAssets -
-    loans;
+  const netWorth = totalValue + cash + cpf + otherAssets - loans;
 
   const totalReturnPercent =
     totalInvested > 0
@@ -243,9 +240,7 @@ function App() {
 
   const largestPosition =
     performance.length > 0
-      ? [...performance].sort(
-          (a, b) => b.currentValue - a.currentValue
-        )[0]
+      ? [...performance].sort((a, b) => b.currentValue - a.currentValue)[0]
       : null;
 
   const bestPerformer =
@@ -277,13 +272,7 @@ function App() {
       : 90;
 
   const incomeScore =
-    yieldOnCost >= 4
-      ? 90
-      : yieldOnCost >= 2
-      ? 70
-      : yieldOnCost >= 1
-      ? 55
-      : 40;
+    yieldOnCost >= 4 ? 90 : yieldOnCost >= 2 ? 70 : yieldOnCost >= 1 ? 55 : 40;
 
   const goalScore =
     goalProgress >= 75
@@ -321,7 +310,9 @@ function App() {
   }
 
   if (strengths.length === 0) {
-    strengths.push("Portfolio is actively tracked and progressing toward long-term wealth accumulation.");
+    strengths.push(
+      "Portfolio is actively tracked and progressing toward long-term wealth accumulation."
+    );
   }
 
   if (assetTypeData.length === 1) {
@@ -351,7 +342,8 @@ function App() {
           </h1>
 
           <p className="mt-3 text-slate-400">
-            Track ETFs, mutual funds, returns, allocation, dividends and history.
+            Track ETFs, mutual funds, returns, allocation, dividends and
+            long-term wealth progress.
           </p>
 
           <div className="mt-5 flex flex-wrap justify-center gap-3">
@@ -379,175 +371,178 @@ function App() {
         </header>
 
         <nav className="mb-8 flex flex-wrap justify-center gap-2">
-          <TabButton active={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")}>
-            Dashboard
-          </TabButton>
-          <TabButton active={activeTab === "portfolio"} onClick={() => setActiveTab("portfolio")}>
-            Portfolio
-          </TabButton>
-          <TabButton active={activeTab === "news"} onClick={() => setActiveTab("news")}>
-            News
-          </TabButton>
-          <TabButton active={activeTab === "income"} onClick={() => setActiveTab("income")}>
-            Income
-          </TabButton>
-          <TabButton active={activeTab === "goals"} onClick={() => setActiveTab("goals")}>
-            Goals
-          </TabButton>
           <TabButton active={activeTab === "wealth"} onClick={() => setActiveTab("wealth")}>
             Wealth
           </TabButton>
-          <TabButton active={activeTab === "reports"} onClick={() => setActiveTab("reports")}>
-            Reports
+
+          <TabButton active={activeTab === "market"} onClick={() => setActiveTab("market")}>
+            Market
+          </TabButton>
+
+          <TabButton active={activeTab === "portfolio"} onClick={() => setActiveTab("portfolio")}>
+            Portfolio
+          </TabButton>
+
+          <TabButton active={activeTab === "insights"} onClick={() => setActiveTab("insights")}>
+            Insights
+          </TabButton>
+
+          <TabButton active={activeTab === "planning"} onClick={() => setActiveTab("planning")}>
+            Planning
+          </TabButton>
+
+          <TabButton active={activeTab === "networth"} onClick={() => setActiveTab("networth")}>
+            Net Worth
+          </TabButton>
+
+          <TabButton active={activeTab === "achievements"} onClick={() => setActiveTab("achievements")}>
+            Achievements
           </TabButton>
         </nav>
 
         <AnimatePresence mode="wait">
           <motion.div
-             key={activeTab}
-             initial={{ opacity: 0, y: 14 }}
-             animate={{ opacity: 1, y: 0 }}
-             exit={{ opacity: 0, y: -14 }}
-             transition={{ duration: 0.25, ease: "easeInOut" }}
-         >
-
-        {activeTab === "dashboard" && (
-          <>
-
-            <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <MetricCard title="Total Invested" value={`$${totalInvested.toFixed(2)}`} />
-              <MetricCard title="Profit/Loss" value={`$${totalProfitLoss.toFixed(2)}`} positive={totalProfitLoss >= 0} />
-              <MetricCard title="Total Return" value={`${totalReturnPercent.toFixed(2)}%`} positive={totalReturnPercent >= 0} />
-              <MetricCard title="Dividends" value={`$${totalDividends.toFixed(2)}`} positive />
-              <MetricCard title="Yield on Cost" value={`${yieldOnCost.toFixed(2)}%`} positive />
-              <MetricCard title="Annual Dividend Income" value={`$${totalDividendIncome.toFixed(2)}`} positive />
-            </section>
-
-            <DashboardInsightsTabs
-              performance={performance}
-              totalValue={totalValue}
-              monthlyPassiveIncome={monthlyPassiveIncome}
-              monthlyIncomeGoal={100}
-              dividendCalendar={dividendCalendar}
-              totalDividends={totalDividends}
-              portfolioGoal={portfolioGoal}
-              yieldOnCost={yieldOnCost}
-              strengths={strengths}
-              opportunities={opportunities}
-              riskLevel={riskLevel}
-              overallHealthScore={overallHealthScore}
-              diversificationScore={diversificationScore}
-              incomeScore={incomeScore}
-              goalScore={goalScore}
-              largestPosition={largestPosition}
-              bestPerformer={bestPerformer}
-              worstPerformer={worstPerformer}
-              netWorth={netWorth}
-            />
-          </>
-        )}
-        
-        {activeTab === "news" && (
-           <>
-             <MarketNews />
-           </>
-         )}
-        
-        {activeTab === "portfolio" && (
-           <PortfolioTabs
-             performance={performance}
-             transactions={transactions}
-             totalValue={totalValue}
-             allocationData={allocationData}
-             assetTypeData={assetTypeData}
-             colors={colors}
-             form={form}
-             setForm={setForm}
-             editingId={editingId}
-             handleChange={handleChange}
-             handleSubmit={handleSubmit}
-             handleEdit={handleEdit}
-             handleDelete={handleDelete}
-           />
-         )}
-
-        {activeTab === "income" && (
-          <IncomeTabs
-            monthlyPassiveIncome={monthlyPassiveIncome}
-            totalDividends={totalDividends}
-            totalValue={totalValue}
-            dividendForm={dividendForm}
-            handleDividendChange={handleDividendChange}
-            handleDividendSubmit={handleDividendSubmit}
-            dividends={dividends}
-            handleDividendDelete={handleDividendDelete}
-          />
-        )}
-
-        {activeTab === "goals" && (
-          <GoalsTabs
-            portfolioGoal={portfolioGoal}
-            totalValue={totalValue}
-            netWorth={netWorth}
-            goalProgress={goalProgress}
-            updatePortfolioGoal={updatePortfolioGoal}
-            fetchData={fetchData}
-            performance={performance}
-          />
-        )}
-
-        {activeTab === "wealth" && (
-          <WealthTabs
-            totalValue={totalValue}
-            portfolioGoal={portfolioGoal}
-            netWorth={netWorth}
-            cash={cash}
-            cpf={cpf}
-            otherAssets={otherAssets}
-            loans={loans}
-          />
-        )}
-
-        {activeTab === "reports" && (
-         <>
-          <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center shadow-xl">
-          <h2 className="text-xl font-bold">Reports</h2>
-          <p className="mt-2 text-slate-400">
-              Generate a one-page PDF summary of your portfolio, net worth, allocation and milestones.
-          </p>
-
-          <button
-            onClick={handleDownloadReport}
-            className="mt-6 rounded-lg bg-indigo-600 px-6 py-3 font-semibold hover:bg-indigo-500"
+            key={activeTab}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -14 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
           >
-            Generate Wealth Report
-          </button>
+            {activeTab === "wealth" && (
+              <WealthDashboardSummary
+                netWorth={netWorth}
+                portfolioValue={totalValue}
+                portfolioGoal={portfolioGoal}
+                monthlyPassiveIncome={monthlyPassiveIncome}
+                monthlyIncomeGoal={100}
+                totalDividends={totalDividends}
+                dividendCalendar={dividendCalendar}
+                performance={performance}
+                trendData={trendData}
+                totalReturnPercent={totalReturnPercent}
+                goalProgress={goalProgress}
+                bestPerformer={bestPerformer}
+                worstPerformer={worstPerformer}
+              />
+            )}
 
-          <button
-            onClick={backupDatabase}
-            className="ml-3 mt-6 rounded-lg bg-blue-600 px-6 py-3 font-semibold hover:bg-blue-500"
-          >
-        Backup Database
-      </button>
-    </section>
+            {activeTab === "market" && <MarketNews />}
 
-    <MilestoneTabs
-      portfolioValue={totalValue}
-      portfolioGoal={portfolioGoal}
-      totalDividends={totalDividends}
-      monthlyPassiveIncome={monthlyPassiveIncome}
-      netWorth={netWorth}
-    />
-  </>
-)}
+            {activeTab === "portfolio" && (
+              <>
+                <PortfolioTabs
+                  performance={performance}
+                  transactions={transactions}
+                  totalValue={totalValue}
+                  allocationData={allocationData}
+                  assetTypeData={assetTypeData}
+                  colors={colors}
+                  form={form}
+                  setForm={setForm}
+                  editingId={editingId}
+                  handleChange={handleChange}
+                  handleSubmit={handleSubmit}
+                  handleEdit={handleEdit}
+                  handleDelete={handleDelete}
+                  monthlyPassiveIncome={monthlyPassiveIncome}
+                  totalDividends={totalDividends}
+                  dividendForm={dividendForm}
+                  handleDividendChange={handleDividendChange}
+                  handleDividendSubmit={handleDividendSubmit}
+                  dividends={dividends}
+                  handleDividendDelete={handleDividendDelete}
+                />
+              </>
+            )}
 
-        </motion.div>
-      </AnimatePresence>
+            {activeTab === "insights" && (
+              <DashboardInsightsTabs
+                performance={performance}
+                totalValue={totalValue}
+                monthlyPassiveIncome={monthlyPassiveIncome}
+                monthlyIncomeGoal={100}
+                dividendCalendar={dividendCalendar}
+                totalDividends={totalDividends}
+                portfolioGoal={portfolioGoal}
+                yieldOnCost={yieldOnCost}
+                strengths={strengths}
+                opportunities={opportunities}
+                riskLevel={riskLevel}
+                overallHealthScore={overallHealthScore}
+                diversificationScore={diversificationScore}
+                incomeScore={incomeScore}
+                goalScore={goalScore}
+                largestPosition={largestPosition}
+                bestPerformer={bestPerformer}
+                worstPerformer={worstPerformer}
+                netWorth={netWorth}
+              />
+            )}
 
+            {activeTab === "planning" && (
+              <GoalsTabs
+                portfolioGoal={portfolioGoal}
+                totalValue={totalValue}
+                netWorth={netWorth}
+                goalProgress={goalProgress}
+                updatePortfolioGoal={updatePortfolioGoal}
+                fetchData={fetchData}
+                performance={performance}
+              />
+            )}
+
+            {activeTab === "networth" && (
+              <WealthTabs
+                totalValue={totalValue}
+                portfolioGoal={portfolioGoal}
+                netWorth={netWorth}
+                cash={cash}
+                cpf={cpf}
+                otherAssets={otherAssets}
+                loans={loans}
+              />
+            )}
+
+            {activeTab === "achievements" && (
+              <>
+                <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center shadow-xl">
+                  <h2 className="text-xl font-bold">Reports</h2>
+
+                  <p className="mt-2 text-slate-400">
+                    Generate a one-page PDF summary of your portfolio, net worth,
+                    allocation and milestones.
+                  </p>
+
+                  <button
+                    onClick={handleDownloadReport}
+                    className="mt-6 rounded-lg bg-indigo-600 px-6 py-3 font-semibold hover:bg-indigo-500"
+                  >
+                    Generate Wealth Report
+                  </button>
+
+                  <button
+                    onClick={backupDatabase}
+                    className="ml-3 mt-6 rounded-lg bg-blue-600 px-6 py-3 font-semibold hover:bg-blue-500"
+                  >
+                    Backup Database
+                  </button>
+                </section>
+
+                <MilestoneTabs
+                  portfolioValue={totalValue}
+                  portfolioGoal={portfolioGoal}
+                  totalDividends={totalDividends}
+                  monthlyPassiveIncome={monthlyPassiveIncome}
+                  netWorth={netWorth}
+                />
+              </>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );
-};
+}
 
 function TabButton({ children, active, onClick }) {
   return (
@@ -555,13 +550,13 @@ function TabButton({ children, active, onClick }) {
       onClick={onClick}
       className={`rounded-lg px-5 py-3 font-semibold transition-all duration-300 ${
         active
-      ? "scale-105 bg-emerald-600 text-white shadow-lg shadow-emerald-700/40"
-      : "bg-slate-800 text-slate-300 hover:scale-105 hover:bg-slate-700 hover:text-white"
-    }`}
+          ? "scale-105 bg-emerald-600 text-white shadow-lg shadow-emerald-700/40"
+          : "bg-slate-800 text-slate-300 hover:scale-105 hover:bg-slate-700 hover:text-white"
+      }`}
     >
       {children}
     </button>
   );
-};
+}
 
 export default App;

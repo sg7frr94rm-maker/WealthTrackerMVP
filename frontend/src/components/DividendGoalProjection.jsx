@@ -8,32 +8,47 @@ function DividendGoalProjection({
   const [monthlyInvestment, setMonthlyInvestment] = useState(1000);
   const [targetYield, setTargetYield] = useState(4);
 
-  const monthlyGap = Math.max(0, monthlyIncomeGoal - currentMonthlyIncome);
+  const safeCurrentMonthlyIncome = Number(currentMonthlyIncome || 0);
+  const safeCurrentPortfolioValue = Number(currentPortfolioValue || 0);
+  const safeMonthlyIncomeGoal = Number(monthlyIncomeGoal || 0);
+  const safeMonthlyInvestment = Number(monthlyInvestment || 0);
+  const safeTargetYield = Number(targetYield || 0);
+
+  const monthlyGap = Math.max(
+    0,
+    safeMonthlyIncomeGoal - safeCurrentMonthlyIncome
+  );
 
   const capitalRequired =
-    monthlyGap > 0 ? (monthlyGap * 12) / (targetYield / 100) : 0;
+    monthlyGap > 0 && safeTargetYield > 0
+      ? (monthlyGap * 12) / (safeTargetYield / 100)
+      : 0;
 
   const monthsToGoal =
-    monthlyInvestment > 0 ? Math.ceil(capitalRequired / monthlyInvestment) : 0;
+    safeMonthlyInvestment > 0
+      ? Math.ceil(capitalRequired / safeMonthlyInvestment)
+      : 0;
 
   const years = Math.floor(monthsToGoal / 12);
   const months = monthsToGoal % 12;
 
-  const projectedPortfolioValue = currentPortfolioValue + capitalRequired;
+  const projectedPortfolioValue =
+    safeCurrentPortfolioValue + capitalRequired;
 
   const goalReachedDate = new Date();
   goalReachedDate.setMonth(goalReachedDate.getMonth() + monthsToGoal);
 
-  return (
-    <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-      <div className="mb-5">
-        <h2 className="text-xl font-bold">Dividend Goal Projection</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Estimate how long it may take to reach your passive income target.
-        </p>
-      </div>
+  const incomeGoalProgress =
+    safeMonthlyIncomeGoal > 0
+      ? Math.min(
+          (safeCurrentMonthlyIncome / safeMonthlyIncomeGoal) * 100,
+          100
+        )
+      : 0;
 
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
         <InputBox
           label="Monthly Income Goal"
           value={monthlyIncomeGoal}
@@ -56,7 +71,7 @@ function DividendGoalProjection({
       <div className="grid gap-4 md:grid-cols-4">
         <ProjectionCard
           title="Current Monthly Income"
-          value={`$${currentMonthlyIncome.toFixed(2)}`}
+          value={`$${safeCurrentMonthlyIncome.toFixed(2)}`}
           positive
         />
 
@@ -77,7 +92,7 @@ function DividendGoalProjection({
         />
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
+      <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
         <h3 className="font-bold">Estimated Time to Goal</h3>
 
         <p className="mt-3 text-3xl font-bold text-emerald-400">
@@ -101,42 +116,29 @@ function DividendGoalProjection({
         <div className="mt-5">
           <div className="mb-2 flex justify-between text-sm">
             <span>Income Goal Progress</span>
-            <span>
-              {monthlyIncomeGoal > 0
-                ? Math.min(
-                    (currentMonthlyIncome / monthlyIncomeGoal) * 100,
-                    100
-                  ).toFixed(1)
-                : "0.0"}
-              %
-            </span>
+            <span>{incomeGoalProgress.toFixed(1)}%</span>
           </div>
 
           <div className="h-3 rounded-full bg-slate-800">
             <div
               className="h-3 rounded-full bg-emerald-500"
               style={{
-                width: `${
-                  monthlyIncomeGoal > 0
-                    ? Math.min(
-                        (currentMonthlyIncome / monthlyIncomeGoal) * 100,
-                        100
-                      )
-                    : 0
-                }%`,
+                width: `${incomeGoalProgress}%`,
               }}
             />
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
 function InputBox({ label, value, onChange }) {
   return (
     <div>
-      <label className="mb-2 block text-sm text-slate-400">{label}</label>
+      <label className="mb-2 block text-sm text-slate-400">
+        {label}
+      </label>
 
       <input
         type="number"

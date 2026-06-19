@@ -80,12 +80,6 @@ export const deleteDividendCalendarItem = (id) =>
 export const downloadWealthReport = () =>
   window.open(`${API_URL}/report/wealth`, "_blank");
 
-export const getMarketNews = () =>
-  axios.get(`${API_URL}/news`);
-
-export const getOpportunities = () =>
-  axios.get(`${API_URL}/opportunities`);
-
 export const getTargetAllocations = () =>
   axios.get(`${API_URL}/target-allocations`);
 
@@ -117,3 +111,9 @@ export const backupDatabase = async () => {
 
 export const generateAiPortfolioInsights = (payload) =>
   axios.post(`${API_URL}/portfolio/ai-insights`, payload);
+
+export const getMarketNews = () =>
+  axios.get(`${API_URL}/news`);
+
+export const getOpportunities = () =>
+  axios.get(`${API_URL}/opportunities`);
