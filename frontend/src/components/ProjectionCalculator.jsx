@@ -9,10 +9,19 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-function ProjectionCalculator({ currentValue, portfolioGoal = 100000 }) {
+function ProjectionCalculator({
+  currentValue,
+  portfolioGoal = 100000,
+}) {
   const [monthlyContribution, setMonthlyContribution] = useState(1000);
   const [annualReturn, setAnnualReturn] = useState(8);
   const [years, setYears] = useState(10);
+
+  const money = (value) =>
+    `$${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   const months = years * 12;
   const monthlyRate = annualReturn / 100 / 12;
@@ -25,7 +34,9 @@ function ProjectionCalculator({ currentValue, portfolioGoal = 100000 }) {
       : currentValue + monthlyContribution * months;
 
   const totalContribution = monthlyContribution * months;
-  const projectedGain = futureValue - currentValue - totalContribution;
+
+  const projectedGain =
+    futureValue - currentValue - totalContribution;
 
   const projectionData = [];
 
@@ -36,7 +47,8 @@ function ProjectionCalculator({ currentValue, portfolioGoal = 100000 }) {
       monthlyRate > 0
         ? currentValue * Math.pow(1 + monthlyRate, currentMonths) +
           monthlyContribution *
-            ((Math.pow(1 + monthlyRate, currentMonths) - 1) / monthlyRate)
+            ((Math.pow(1 + monthlyRate, currentMonths) - 1) /
+              monthlyRate)
         : currentValue + monthlyContribution * currentMonths;
 
     projectionData.push({
@@ -50,7 +62,8 @@ function ProjectionCalculator({ currentValue, portfolioGoal = 100000 }) {
 
   while (goalValue < portfolioGoal && yearsToGoal < 60) {
     goalValue =
-      goalValue * (1 + annualReturn / 100) + monthlyContribution * 12;
+      goalValue * (1 + annualReturn / 100) +
+      monthlyContribution * 12;
 
     yearsToGoal++;
   }
@@ -59,8 +72,13 @@ function ProjectionCalculator({ currentValue, portfolioGoal = 100000 }) {
     currentValue >= portfolioGoal
       ? "Goal Reached"
       : yearsToGoal >= 60
-      ? "More than 60 years"
-      : `${yearsToGoal} years`;
+      ? "More than 60 Years"
+      : `${yearsToGoal} Years`;
+
+  const progressPercent =
+    portfolioGoal > 0
+      ? (futureValue / portfolioGoal) * 100
+      : 0;
 
   return (
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
@@ -73,10 +91,13 @@ function ProjectionCalculator({ currentValue, portfolioGoal = 100000 }) {
           <label className="mb-2 block text-sm text-slate-400">
             Monthly Investment
           </label>
+
           <input
             type="number"
             value={monthlyContribution}
-            onChange={(e) => setMonthlyContribution(Number(e.target.value))}
+            onChange={(e) =>
+              setMonthlyContribution(Number(e.target.value))
+            }
             className="h-12 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 outline-none focus:border-emerald-500"
           />
         </div>
@@ -85,16 +106,22 @@ function ProjectionCalculator({ currentValue, portfolioGoal = 100000 }) {
           <label className="mb-2 block text-sm text-slate-400">
             Expected Annual Return (%)
           </label>
+
           <input
             type="number"
             value={annualReturn}
-            onChange={(e) => setAnnualReturn(Number(e.target.value))}
+            onChange={(e) =>
+              setAnnualReturn(Number(e.target.value))
+            }
             className="h-12 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 outline-none focus:border-emerald-500"
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-sm text-slate-400">Years</label>
+          <label className="mb-2 block text-sm text-slate-400">
+            Years
+          </label>
+
           <input
             type="number"
             value={years}
@@ -104,52 +131,86 @@ function ProjectionCalculator({ currentValue, portfolioGoal = 100000 }) {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-4">
+      <div className="mt-6 grid gap-4 md:grid-cols-5">
         <ProjectionCard
           title="Current Portfolio"
-          value={`$${currentValue.toFixed(2)}`}
+          value={money(currentValue)}
         />
 
         <ProjectionCard
-          title="Projected Portfolio Value"
-          value={`$${futureValue.toFixed(2)}`}
+          title="Projected Portfolio"
+          value={money(futureValue)}
           positive
         />
 
         <ProjectionCard
           title="Total Contributions"
-          value={`$${totalContribution.toFixed(2)}`}
+          value={money(totalContribution)}
         />
 
         <ProjectionCard
-          title="Projected Investment Gain"
-          value={`$${projectedGain.toFixed(2)}`}
+          title="Investment Gain"
+          value={money(projectedGain)}
           positive={projectedGain >= 0}
+        />
+
+        <ProjectionCard
+          title="Goal Progress"
+          value={`${Math.min(progressPercent, 999).toFixed(2)}%`}
+          positive
         />
       </div>
 
       <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
         <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <h3 className="font-bold">Projection Growth Chart</h3>
+            <h3 className="font-bold">
+              Projection Growth Chart
+            </h3>
+
             <p className="text-sm text-slate-400">
               Estimated portfolio value over time.
             </p>
           </div>
 
           <div className="text-left md:text-right">
-            <p className="text-2xl font-bold text-emerald-400">{goalText}</p>
-            <p className="text-sm text-slate-400">Years to $100,000 goal</p>
+            <p className="text-2xl font-bold text-emerald-400">
+              {goalText}
+            </p>
+
+            <p className="text-sm text-slate-400">
+              Years to Goal
+            </p>
           </div>
         </div>
 
         <div className="h-[320px] w-full">
           <ResponsiveContainer>
             <LineChart data={projectionData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="year" stroke="#94a3b8" />
-              <YAxis stroke="#94a3b8" />
-              <Tooltip />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#334155"
+              />
+
+              <XAxis
+                dataKey="year"
+                stroke="#94a3b8"
+              />
+
+              <YAxis
+                stroke="#94a3b8"
+                tickFormatter={(value) =>
+                  Number(value).toLocaleString("en-SG")
+                }
+              />
+
+              <Tooltip
+                formatter={(value) => [
+                  money(value),
+                  "Portfolio Value",
+                ]}
+              />
+
               <Line
                 type="monotone"
                 dataKey="value"
@@ -160,16 +221,46 @@ function ProjectionCalculator({ currentValue, portfolioGoal = 100000 }) {
           </ResponsiveContainer>
         </div>
       </div>
+
+      <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
+        <div className="grid gap-4 md:grid-cols-3">
+          <ProjectionCard
+            title="Portfolio Goal"
+            value={money(portfolioGoal)}
+          />
+
+          <ProjectionCard
+            title="Difference to Goal"
+            value={money(
+              Math.max(portfolioGoal - futureValue, 0)
+            )}
+          />
+
+          <ProjectionCard
+            title="Projected Surplus"
+            value={money(
+              Math.max(futureValue - portfolioGoal, 0)
+            )}
+            positive
+          />
+        </div>
+      </div>
     </section>
   );
 }
 
-function ProjectionCard({ title, value, positive }) {
+function ProjectionCard({
+  title,
+  value,
+  positive,
+}) {
   const hasColor = positive !== undefined;
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-      <p className="text-sm text-slate-400">{title}</p>
+      <p className="text-sm text-slate-400">
+        {title}
+      </p>
 
       <p
         className={`mt-2 text-2xl font-bold ${

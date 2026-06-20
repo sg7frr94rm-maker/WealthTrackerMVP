@@ -4,24 +4,30 @@ function DividendGoalProjection({
   currentMonthlyIncome,
   currentPortfolioValue,
 }) {
-  const [monthlyIncomeGoal, setMonthlyIncomeGoal] = useState(100);
+  const [monthlyDividendGoal, setMonthlyDividendGoal] = useState(100);
   const [monthlyInvestment, setMonthlyInvestment] = useState(1000);
   const [targetYield, setTargetYield] = useState(4);
 
-  const safeCurrentMonthlyIncome = Number(currentMonthlyIncome || 0);
+  const safeCurrentMonthlyDividend = Number(currentMonthlyIncome || 0);
   const safeCurrentPortfolioValue = Number(currentPortfolioValue || 0);
-  const safeMonthlyIncomeGoal = Number(monthlyIncomeGoal || 0);
+  const safeMonthlyDividendGoal = Number(monthlyDividendGoal || 0);
   const safeMonthlyInvestment = Number(monthlyInvestment || 0);
   const safeTargetYield = Number(targetYield || 0);
 
-  const monthlyGap = Math.max(
+  const money = (value, decimals = 0) =>
+    `$${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })}`;
+
+  const monthlyDividendGap = Math.max(
     0,
-    safeMonthlyIncomeGoal - safeCurrentMonthlyIncome
+    safeMonthlyDividendGoal - safeCurrentMonthlyDividend
   );
 
   const capitalRequired =
-    monthlyGap > 0 && safeTargetYield > 0
-      ? (monthlyGap * 12) / (safeTargetYield / 100)
+    monthlyDividendGap > 0 && safeTargetYield > 0
+      ? (monthlyDividendGap * 12) / (safeTargetYield / 100)
       : 0;
 
   const monthsToGoal =
@@ -38,10 +44,10 @@ function DividendGoalProjection({
   const goalReachedDate = new Date();
   goalReachedDate.setMonth(goalReachedDate.getMonth() + monthsToGoal);
 
-  const incomeGoalProgress =
-    safeMonthlyIncomeGoal > 0
+  const dividendGoalProgress =
+    safeMonthlyDividendGoal > 0
       ? Math.min(
-          (safeCurrentMonthlyIncome / safeMonthlyIncomeGoal) * 100,
+          (safeCurrentMonthlyDividend / safeMonthlyDividendGoal) * 100,
           100
         )
       : 0;
@@ -50,9 +56,9 @@ function DividendGoalProjection({
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
         <InputBox
-          label="Monthly Income Goal"
-          value={monthlyIncomeGoal}
-          onChange={setMonthlyIncomeGoal}
+          label="Monthly Dividend Goal"
+          value={monthlyDividendGoal}
+          onChange={setMonthlyDividendGoal}
         />
 
         <InputBox
@@ -70,33 +76,33 @@ function DividendGoalProjection({
 
       <div className="grid gap-4 md:grid-cols-4">
         <ProjectionCard
-          title="Current Monthly Income"
-          value={`$${safeCurrentMonthlyIncome.toFixed(2)}`}
+          title="Current Monthly Dividend"
+          value={money(safeCurrentMonthlyDividend, 2)}
           positive
         />
 
         <ProjectionCard
-          title="Income Gap"
-          value={`$${monthlyGap.toFixed(2)}`}
+          title="Dividend Gap"
+          value={money(monthlyDividendGap, 2)}
         />
 
         <ProjectionCard
           title="Capital Required"
-          value={`$${capitalRequired.toFixed(0)}`}
+          value={money(capitalRequired)}
         />
 
         <ProjectionCard
           title="Projected Portfolio Value"
-          value={`$${projectedPortfolioValue.toFixed(0)}`}
+          value={money(projectedPortfolioValue)}
           positive
         />
       </div>
 
       <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-        <h3 className="font-bold">Estimated Time to Goal</h3>
+        <h3 className="font-bold">Estimated Time to Dividend Goal</h3>
 
         <p className="mt-3 text-3xl font-bold text-emerald-400">
-          {monthlyGap === 0
+          {monthlyDividendGap === 0
             ? "Goal Achieved"
             : `${years} years ${months} months`}
         </p>
@@ -104,7 +110,7 @@ function DividendGoalProjection({
         <p className="mt-2 text-sm text-slate-400">
           Estimated goal date:{" "}
           <span className="font-semibold text-slate-200">
-            {monthlyGap === 0
+            {monthlyDividendGap === 0
               ? "Now"
               : goalReachedDate.toLocaleDateString("en-SG", {
                   month: "long",
@@ -115,15 +121,15 @@ function DividendGoalProjection({
 
         <div className="mt-5">
           <div className="mb-2 flex justify-between text-sm">
-            <span>Income Goal Progress</span>
-            <span>{incomeGoalProgress.toFixed(1)}%</span>
+            <span>Dividend Goal Progress</span>
+            <span>{dividendGoalProgress.toFixed(1)}%</span>
           </div>
 
           <div className="h-3 rounded-full bg-slate-800">
             <div
               className="h-3 rounded-full bg-emerald-500"
               style={{
-                width: `${incomeGoalProgress}%`,
+                width: `${dividendGoalProgress}%`,
               }}
             />
           </div>
@@ -136,9 +142,7 @@ function DividendGoalProjection({
 function InputBox({ label, value, onChange }) {
   return (
     <div>
-      <label className="mb-2 block text-sm text-slate-400">
-        {label}
-      </label>
+      <label className="mb-2 block text-sm text-slate-400">{label}</label>
 
       <input
         type="number"

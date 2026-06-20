@@ -99,10 +99,10 @@ function WealthTrackerApp({ signOut, user }) {
       setTransactions(transactionsRes.data.data || []);
       setTrendData(trendRes.data || []);
       setDividends(dividendsRes.data.data || []);
-      setStats(statsRes.data);
-      setPortfolioGoal(settingsRes.data.portfolioGoal);
+      setStats(statsRes.data || null);
+      setPortfolioGoal(Number(settingsRes.data.portfolioGoal || 100000));
       setDividendCalendar(dividendCalendarRes.data || []);
-      setNetWorthData(netWorthRes.data);
+      setNetWorthData(netWorthRes.data || {});
     } catch (error) {
       console.error("Failed to load dashboard data", error);
     }
@@ -205,12 +205,12 @@ function WealthTrackerApp({ signOut, user }) {
     fetchData();
   };
 
-  const totalValue = stats?.currentValue || 0;
-  const totalInvested = stats?.totalInvested || 0;
-  const totalProfitLoss = stats?.profitLoss || 0;
-  const totalDividends = stats?.totalDividends || 0;
-  const yieldOnCost = stats?.yieldOnCost || 0;
-  const monthlyPassiveIncome = stats?.monthlyPassiveIncome || 0;
+  const totalValue = Number(stats?.currentValue || 0);
+  const totalInvested = Number(stats?.totalInvested || 0);
+  const totalProfitLoss = Number(stats?.profitLoss || 0);
+  const totalDividends = Number(stats?.totalDividends || 0);
+  const yieldOnCost = Number(stats?.yieldOnCost || 0);
+  const monthlyPassiveIncome = Number(stats?.monthlyPassiveIncome || 0);
 
   const cash = Number(netWorthData.cash || 0);
   const cpf = Number(netWorthData.cpf || 0);
@@ -229,7 +229,7 @@ function WealthTrackerApp({ signOut, user }) {
 
   const allocationData = performance.map((item) => ({
     name: item.symbol,
-    value: item.currentValue,
+    value: Number(item.currentValue || 0),
   }));
 
   const assetTypeData = Object.values(
@@ -243,33 +243,39 @@ function WealthTrackerApp({ signOut, user }) {
         };
       }
 
-      acc[type].value += item.currentValue;
+      acc[type].value += Number(item.currentValue || 0);
       return acc;
     }, {})
   );
 
   const largestPosition =
     performance.length > 0
-      ? [...performance].sort((a, b) => b.currentValue - a.currentValue)[0]
+      ? [...performance].sort(
+          (a, b) => Number(b.currentValue || 0) - Number(a.currentValue || 0)
+        )[0]
       : null;
 
   const bestPerformer =
     performance.length > 0
       ? [...performance].sort(
-          (a, b) => b.profitLossPercent - a.profitLossPercent
+          (a, b) =>
+            Number(b.profitLossPercent || 0) -
+            Number(a.profitLossPercent || 0)
         )[0]
       : null;
 
   const worstPerformer =
     performance.length > 0
       ? [...performance].sort(
-          (a, b) => a.profitLossPercent - b.profitLossPercent
+          (a, b) =>
+            Number(a.profitLossPercent || 0) -
+            Number(b.profitLossPercent || 0)
         )[0]
       : null;
 
   const concentrationPercent =
     largestPosition && totalValue > 0
-      ? (largestPosition.currentValue / totalValue) * 100
+      ? (Number(largestPosition.currentValue || 0) / totalValue) * 100
       : 0;
 
   const diversificationScore =
@@ -359,8 +365,8 @@ function WealthTrackerApp({ signOut, user }) {
             Wealth
           </TabButton>
 
-          <TabButton active={activeTab === "market"} onClick={() => setActiveTab("market")}>
-            Market
+          <TabButton active={activeTab === "networth"} onClick={() => setActiveTab("networth")}>
+            Net Worth
           </TabButton>
 
           <TabButton active={activeTab === "portfolio"} onClick={() => setActiveTab("portfolio")}>
@@ -371,12 +377,12 @@ function WealthTrackerApp({ signOut, user }) {
             Insights
           </TabButton>
 
-          <TabButton active={activeTab === "planning"} onClick={() => setActiveTab("planning")}>
-            Planning
+          <TabButton active={activeTab === "market"} onClick={() => setActiveTab("market")}>
+            Market
           </TabButton>
 
-          <TabButton active={activeTab === "networth"} onClick={() => setActiveTab("networth")}>
-            Net Worth
+          <TabButton active={activeTab === "planning"} onClick={() => setActiveTab("planning")}>
+            Planning
           </TabButton>
 
           <TabButton active={activeTab === "achievements"} onClick={() => setActiveTab("achievements")}>
@@ -410,7 +416,17 @@ function WealthTrackerApp({ signOut, user }) {
               />
             )}
 
-            {activeTab === "market" && <MarketNews />}
+            {activeTab === "networth" && (
+              <WealthTabs
+                totalValue={totalValue}
+                portfolioGoal={portfolioGoal}
+                netWorth={netWorth}
+                cash={cash}
+                cpf={cpf}
+                otherAssets={otherAssets}
+                loans={loans}
+              />
+            )}
 
             {activeTab === "portfolio" && (
               <PortfolioTabs
@@ -459,6 +475,8 @@ function WealthTrackerApp({ signOut, user }) {
               />
             )}
 
+            {activeTab === "market" && <MarketNews />}
+
             {activeTab === "planning" && (
               <GoalsTabs
                 portfolioGoal={portfolioGoal}
@@ -468,18 +486,6 @@ function WealthTrackerApp({ signOut, user }) {
                 updatePortfolioGoal={updatePortfolioGoal}
                 fetchData={fetchData}
                 performance={performance}
-              />
-            )}
-
-            {activeTab === "networth" && (
-              <WealthTabs
-                totalValue={totalValue}
-                portfolioGoal={portfolioGoal}
-                netWorth={netWorth}
-                cash={cash}
-                cpf={cpf}
-                otherAssets={otherAssets}
-                loans={loans}
               />
             )}
 

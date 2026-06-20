@@ -26,27 +26,44 @@ function NetWorthTracker({ investmentValue }) {
     const loadNetWorth = async () => {
       const res = await getNetWorthSettings();
 
-      setCash(res.data.cash);
-      setCpf(res.data.cpf);
-      setOtherAssets(res.data.otherAssets);
-      setLoans(res.data.loans);
+      setCash(Number(res.data.cash || 0));
+      setCpf(Number(res.data.cpf || 0));
+      setOtherAssets(Number(res.data.otherAssets || 0));
+      setLoans(Number(res.data.loans || 0));
     };
 
     loadNetWorth();
   }, []);
 
-  const totalAssets = investmentValue + cash + cpf + otherAssets;
-  const totalLiabilities = loans;
+  const safeInvestmentValue = Number(investmentValue || 0);
+
+  const totalAssets =
+    safeInvestmentValue +
+    Number(cash || 0) +
+    Number(cpf || 0) +
+    Number(otherAssets || 0);
+
+  const totalLiabilities = Number(loans || 0);
+
   const netWorth = totalAssets - totalLiabilities;
 
+  const debtRatio =
+    totalAssets > 0 ? (totalLiabilities / totalAssets) * 100 : 0;
+
   const allocationData = [
-    { name: "Investments", value: investmentValue },
-    { name: "Cash", value: cash },
-    { name: "CPF", value: cpf },
-    { name: "Other Assets", value: otherAssets },
+    { name: "Investments", value: safeInvestmentValue },
+    { name: "Cash", value: Number(cash || 0) },
+    { name: "CPF", value: Number(cpf || 0) },
+    { name: "Other Assets", value: Number(otherAssets || 0) },
   ].filter((item) => item.value > 0);
 
   const colors = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b"];
+
+  const money = (value) =>
+    `$${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   const handleSave = async () => {
     await updateNetWorthSettings({
@@ -65,6 +82,7 @@ function NetWorthTracker({ investmentValue }) {
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-xl font-bold">Net Worth Tracker</h2>
+
           <p className="mt-1 text-sm text-slate-400">
             Track your total assets, liabilities, and overall net worth.
           </p>
@@ -80,40 +98,58 @@ function NetWorthTracker({ investmentValue }) {
 
       <div className="grid gap-4 md:grid-cols-4">
         <InputBox label="Cash Savings" value={cash} onChange={setCash} />
-        <InputBox label="CPF / Retirement Funds" value={cpf} onChange={setCpf} />
-        <InputBox label="Other Assets" value={otherAssets} onChange={setOtherAssets} />
-        <InputBox label="Loans / Liabilities" value={loans} onChange={setLoans} />
+
+        <InputBox
+          label="CPF / Retirement Funds"
+          value={cpf}
+          onChange={setCpf}
+        />
+
+        <InputBox
+          label="Other Assets"
+          value={otherAssets}
+          onChange={setOtherAssets}
+        />
+
+        <InputBox
+          label="Loans / Liabilities"
+          value={loans}
+          onChange={setLoans}
+        />
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-4">
+      <div className="mt-6 grid gap-4 md:grid-cols-5">
         <NetWorthCard
           title="Investment Portfolio"
-          value={`$${investmentValue.toFixed(2)}`}
+          value={money(safeInvestmentValue)}
           positive
         />
 
-        <NetWorthCard
-          title="Total Assets"
-          value={`$${totalAssets.toFixed(2)}`}
-          positive
-        />
+        <NetWorthCard title="Total Assets" value={money(totalAssets)} positive />
 
         <NetWorthCard
           title="Total Liabilities"
-          value={`$${totalLiabilities.toFixed(2)}`}
+          value={money(totalLiabilities)}
           negative={totalLiabilities > 0}
         />
 
         <NetWorthCard
+          title="Debt Ratio"
+          value={`${debtRatio.toFixed(1)}%`}
+          positive={debtRatio < 50}
+          negative={debtRatio >= 50}
+        />
+
+        <NetWorthCard
           title="Net Worth"
-          value={`$${netWorth.toFixed(2)}`}
+          value={money(netWorth)}
           positive={netWorth >= 0}
         />
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-          <h3 className="mb-4 text-lg font-bold">Net Worth Allocation</h3>
+          <h3 className="mb-4 text-lg font-bold">Total Asset Allocation</h3>
 
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -142,7 +178,7 @@ function NetWorthTracker({ investmentValue }) {
         </div>
 
         <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-          <h3 className="mb-4 text-lg font-bold">Asset Breakdown</h3>
+          <h3 className="mb-4 text-lg font-bold">Total Asset Breakdown</h3>
 
           <div className="space-y-5">
             {allocationData.map((item) => {
@@ -155,7 +191,7 @@ function NetWorthTracker({ investmentValue }) {
                     <span>{item.name}</span>
 
                     <span className="font-semibold">
-                      ${item.value.toLocaleString()} ({percent.toFixed(2)}%)
+                      {money(item.value)} ({percent.toFixed(2)}%)
                     </span>
                   </div>
 
@@ -168,6 +204,23 @@ function NetWorthTracker({ investmentValue }) {
                 </div>
               );
             })}
+
+            <div className="border-t border-slate-800 pt-5">
+              <div className="mb-2 flex justify-between">
+                <span className="text-red-300">Total Liabilities</span>
+
+                <span className="font-semibold text-red-300">
+                  {money(totalLiabilities)} ({debtRatio.toFixed(2)}% of assets)
+                </span>
+              </div>
+
+              <div className="h-3 w-full rounded-full bg-slate-800">
+                <div
+                  className="h-3 rounded-full bg-red-500"
+                  style={{ width: `${Math.min(debtRatio, 100)}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

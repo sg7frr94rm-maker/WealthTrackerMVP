@@ -2,13 +2,19 @@ import { useEffect, useState } from "react";
 import { getTargetAllocations } from "../api/portfolioApi";
 
 function PortfolioActionCenter({
-  performance,
-  totalValue,
-  monthlyPassiveIncome,
+  performance = [],
+  totalValue = 0,
+  monthlyPassiveIncome = 0,
   monthlyIncomeGoal = 100,
   dividendCalendar = [],
 }) {
   const [targets, setTargets] = useState({});
+
+  const money = (value) =>
+    `$${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   useEffect(() => {
     const loadTargets = async () => {
@@ -23,23 +29,28 @@ function PortfolioActionCenter({
     loadTargets();
   }, []);
 
-  const incomeGap = Math.max(0, monthlyIncomeGoal - monthlyPassiveIncome);
+  const incomeGap = Math.max(
+    0,
+    Number(monthlyIncomeGoal || 0) - Number(monthlyPassiveIncome || 0)
+  );
 
   const nextDividend = [...dividendCalendar]
     .filter((item) => new Date(item.expectedDate) >= new Date())
     .sort((a, b) => new Date(a.expectedDate) - new Date(b.expectedDate))[0];
 
   const rebalanceThresholdPercent = 1;
-  const threshold = totalValue * (rebalanceThresholdPercent / 100);
+  const threshold = Number(totalValue || 0) * (rebalanceThresholdPercent / 100);
 
   const rebalancingActions = performance
     .map((item) => {
+      const currentValue = Number(item.currentValue || 0);
+
       const currentPercent =
-        totalValue > 0 ? (item.currentValue / totalValue) * 100 : 0;
+        totalValue > 0 ? (currentValue / Number(totalValue || 0)) * 100 : 0;
 
       const targetPercent = Number(targets[item.symbol] || 0);
-      const targetValue = (targetPercent / 100) * totalValue;
-      const difference = targetValue - item.currentValue;
+      const targetValue = (targetPercent / 100) * Number(totalValue || 0);
+      const difference = targetValue - currentValue;
 
       let action = "Hold";
 
@@ -73,7 +84,7 @@ function PortfolioActionCenter({
         2
       )}% vs target ${item.targetPercent.toFixed(2)}%. Suggested ${
         item.action === "Buy" ? "buy" : "reduction"
-      }: $${Math.abs(item.difference).toFixed(2)}.`,
+      }: ${money(Math.abs(item.difference))}.`,
       status: item.action,
       color: item.action === "Buy" ? "green" : "yellow",
     });
@@ -82,11 +93,9 @@ function PortfolioActionCenter({
   if (incomeGap > 0) {
     actions.push({
       title: "Increase passive income",
-      description: `You need another $${incomeGap.toFixed(
-        2
-      )}/month to reach your $${monthlyIncomeGoal.toFixed(
-        2
-      )} monthly income goal.`,
+      description: `You need another ${money(
+        incomeGap
+      )}/month to reach your ${money(monthlyIncomeGoal)} monthly income goal.`,
       status: "Income Gap",
       color: "blue",
     });
@@ -95,9 +104,9 @@ function PortfolioActionCenter({
   if (nextDividend) {
     actions.push({
       title: "Upcoming dividend",
-      description: `${nextDividend.symbol} expected $${Number(
+      description: `${nextDividend.symbol} expected ${money(
         nextDividend.expectedAmount
-      ).toFixed(2)} on ${nextDividend.expectedDate}.`,
+      )} on ${nextDividend.expectedDate}.`,
       status: "Upcoming",
       color: "green",
     });
@@ -118,7 +127,8 @@ function PortfolioActionCenter({
       <div className="mb-5">
         <h2 className="text-xl font-bold">Portfolio Action Center</h2>
         <p className="mt-1 text-sm text-slate-400">
-          Priority actions based on rebalancing, income goal and upcoming dividends.
+          Priority actions based on rebalancing, income goal and upcoming
+          dividends.
         </p>
       </div>
 
@@ -157,7 +167,9 @@ function ActionCard({ number, title, description, status, color }) {
           <h3 className="font-bold">{title}</h3>
         </div>
 
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}
+        >
           {status}
         </span>
       </div>

@@ -173,8 +173,15 @@ db.prepare(`
 const forceManualSymbols = ["FKIQX"];
 
 async function getYahooPrice(symbol) {
+  const updatedAt = new Date().toISOString();
+
   if (forceManualSymbols.includes(symbol)) {
-    return manualPrices[symbol] || 0;
+    return {
+      price: manualPrices[symbol] || 0,
+      source: "Manual Fallback",
+      status: "Manual",
+      updatedAt,
+    };
   }
 
   const yahooSymbols = {
@@ -207,14 +214,29 @@ async function getYahooPrice(symbol) {
       0;
 
     if (price > 0) {
-      return price;
+      return {
+        price,
+        source: "Yahoo Finance",
+        status: "Live",
+        updatedAt,
+      };
     }
 
-    console.log(`Yahoo price unavailable for ${symbol}, using manual fallback`);
-    return manualPrices[symbol] || 0;
+    return {
+      price: manualPrices[symbol] || 0,
+      source: "Manual Fallback",
+      status: "Fallback",
+      updatedAt,
+    };
   } catch (error) {
     console.error(`Error fetching ${symbol}:`, error.message);
-    return manualPrices[symbol] || 0;
+
+    return {
+      price: manualPrices[symbol] || 0,
+      source: "Manual Fallback",
+      status: "Fallback",
+      updatedAt,
+    };
   }
 }
 
@@ -377,11 +399,11 @@ app.delete("/transactions/:id", (req, res) => {
 app.get("/portfolio/performance", async (req, res) => {
   const transactions = db.prepare("SELECT * FROM transactions").all();
 
-  const currentPrices = {};
+  const priceData = {};
 
   for (const tx of transactions) {
-    if (!currentPrices[tx.symbol]) {
-      currentPrices[tx.symbol] = await getYahooPrice(tx.symbol);
+    if (!priceData[tx.symbol]) {
+      priceData[tx.symbol] = await getYahooPrice(tx.symbol);
     }
   }
 
@@ -402,7 +424,14 @@ app.get("/portfolio/performance", async (req, res) => {
   });
 
   const performance = Object.values(summary).map((item) => {
-    const currentPrice = currentPrices[item.symbol] || 0;
+    const priceInfo = priceData[item.symbol] || {
+      price: 0,
+      source: "Unavailable",
+      status: "Unavailable",
+      updatedAt: new Date().toISOString(),
+    };
+
+    const currentPrice = Number(priceInfo.price || 0);
     const averageCost =
       item.totalUnits > 0 ? item.totalInvested / item.totalUnits : 0;
     const currentValue = item.totalUnits * currentPrice;
@@ -421,6 +450,9 @@ app.get("/portfolio/performance", async (req, res) => {
       currentValue: Number(currentValue.toFixed(2)),
       profitLoss: Number(profitLoss.toFixed(2)),
       profitLossPercent: Number(profitLossPercent.toFixed(2)),
+      priceSource: priceInfo.source,
+      priceStatus: priceInfo.status,
+      priceUpdatedAt: priceInfo.updatedAt,
     };
   });
 
@@ -446,7 +478,7 @@ app.post("/portfolio/snapshot", async (req, res) => {
       currentPrices[tx.symbol] = await getYahooPrice(tx.symbol);
     }
 
-    totalValue += tx.units * currentPrices[tx.symbol];
+    totalValue += tx.units * Number(currentPrices[tx.symbol].price || 0);
   }
 
   const today = new Date().toISOString().split("T")[0];
@@ -482,7 +514,7 @@ app.get("/portfolio/stats", async (req, res) => {
     }
 
     totalInvested += tx.units * tx.buyPrice;
-    currentValue += tx.units * currentPrices[tx.symbol];
+    currentValue += tx.units * Number(currentPrices[tx.symbol].price || 0);
   }
 
   dividends.forEach((dividend) => {

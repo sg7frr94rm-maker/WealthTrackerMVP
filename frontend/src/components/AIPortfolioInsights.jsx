@@ -13,6 +13,18 @@ function AIPortfolioInsights({
   const [aiData, setAiData] = useState(null);
   const [error, setError] = useState("");
 
+  const money = (value) =>
+    `$${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
+  const percent = (value) =>
+    `${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}%`;
+
   const loadInsights = async () => {
     try {
       setLoading(true);
@@ -53,7 +65,8 @@ function AIPortfolioInsights({
         <div>
           <h2 className="text-xl font-bold">AI Portfolio Analysis</h2>
           <p className="mt-1 text-sm text-slate-400">
-            Structured portfolio commentary generated from your latest holdings, income and goal progress.
+            Structured portfolio commentary generated from your latest holdings,
+            income and goal progress.
           </p>
         </div>
 
@@ -64,6 +77,13 @@ function AIPortfolioInsights({
         >
           {loading ? "Generating..." : "Refresh Analysis"}
         </button>
+      </div>
+
+      <div className="mb-6 grid gap-4 md:grid-cols-4">
+        <SummaryBox title="Portfolio Value" value={money(totalValue)} />
+        <SummaryBox title="Total Dividends" value={money(totalDividends)} />
+        <SummaryBox title="Monthly Income" value={money(monthlyPassiveIncome)} />
+        <SummaryBox title="Yield on Cost" value={percent(yieldOnCost)} />
       </div>
 
       {error && (
@@ -102,6 +122,15 @@ function AIPortfolioInsights({
   );
 }
 
+function SummaryBox({ title, value }) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+      <p className="text-xs text-slate-400">{title}</p>
+      <p className="mt-2 text-lg font-bold text-emerald-400">{value}</p>
+    </div>
+  );
+}
+
 function InsightAnalysisCard({ item }) {
   const priorityClass =
     item.priority === "High"
@@ -119,19 +148,18 @@ function InsightAnalysisCard({ item }) {
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
             {item.category}
           </p>
-          <h3 className="mt-1 font-bold text-white">
-            {item.title}
-          </h3>
+
+          <h3 className="mt-1 font-bold text-white">{item.title}</h3>
         </div>
 
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${priorityClass}`}>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${priorityClass}`}
+        >
           {item.priority}
         </span>
       </div>
 
-      <p className="text-sm leading-6 text-slate-300">
-        {item.message}
-      </p>
+      <p className="text-sm leading-6 text-slate-300">{item.message}</p>
     </div>
   );
 }

@@ -31,6 +31,23 @@ function WealthDashboardSummary({
       ? (monthlyPassiveIncome / monthlyIncomeGoal) * 100
       : 0;
 
+  const formatNumber = (value) =>
+    Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  const money = (value) => `$${formatNumber(value)}`;
+
+  const formatDate = (date) =>
+    date
+      ? new Date(date).toLocaleDateString("en-SG", {
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+        })
+      : "-";
+
   const nextDividend = [...(dividendCalendar || [])]
     .filter((item) => new Date(item.expectedDate) >= new Date())
     .sort((a, b) => new Date(a.expectedDate) - new Date(b.expectedDate))[0];
@@ -47,16 +64,27 @@ function WealthDashboardSummary({
       ? (Number(largestHolding.currentValue || 0) / portfolioValue) * 100
       : 0;
 
-  const formattedTrendData = (trendData || []).map((item) => ({
-    ...item,
-    value: Number(item.value || 0),
-  }));
+  const formattedTrendData = [...(trendData || [])]
+    .map((item) => ({
+      ...item,
+      value: Number(item.value || 0),
+    }))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  const trendStartDate =
+    formattedTrendData.length > 0 ? formattedTrendData[0].date : null;
+
+  const trendEndDate =
+    formattedTrendData.length > 0
+      ? formattedTrendData[formattedTrendData.length - 1].date
+      : null;
 
   return (
     <section className="space-y-6">
       <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
         <div className="mb-5">
           <h2 className="text-xl font-bold">Wealth Overview</h2>
+
           <p className="mt-1 text-sm text-slate-400">
             High-level snapshot of your net worth, portfolio progress, passive
             income and investment performance.
@@ -66,25 +94,25 @@ function WealthDashboardSummary({
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <SummaryCard
             title="Net Worth"
-            value={`$${Number(netWorth || 0).toFixed(2)}`}
+            value={money(netWorth)}
             subtitle="Total assets minus liabilities"
           />
 
           <SummaryCard
             title="Portfolio Value"
-            value={`$${Number(portfolioValue || 0).toFixed(2)}`}
+            value={money(portfolioValue)}
             subtitle={`Goal progress: ${portfolioProgress.toFixed(2)}%`}
           />
 
           <SummaryCard
             title="Monthly Passive Income"
-            value={`$${Number(monthlyPassiveIncome || 0).toFixed(2)}`}
+            value={money(monthlyPassiveIncome)}
             subtitle={`Income goal: ${incomeProgress.toFixed(2)}%`}
           />
 
           <SummaryCard
             title="Total Dividends"
-            value={`$${Number(totalDividends || 0).toFixed(2)}`}
+            value={money(totalDividends)}
             subtitle={
               nextDividend
                 ? `Next: ${nextDividend.symbol} on ${nextDividend.expectedDate}`
@@ -134,7 +162,16 @@ function WealthDashboardSummary({
         <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-xl font-bold">Growth Trend</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-xl font-bold">Growth Trend</h2>
+
+                {trendStartDate && trendEndDate && (
+                  <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-semibold text-slate-400">
+                    {formatDate(trendStartDate)} → {formatDate(trendEndDate)}
+                  </span>
+                )}
+              </div>
+
               <p className="mt-1 text-sm text-slate-400">
                 Track how your portfolio value changes over time from saved
                 snapshots.
@@ -144,6 +181,7 @@ function WealthDashboardSummary({
             {largestHolding && (
               <div className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm">
                 <p className="text-slate-400">Largest Holding</p>
+
                 <p className="font-bold text-slate-100">
                   {largestHolding.symbol} — {largestHoldingPercent.toFixed(2)}%
                 </p>
@@ -155,15 +193,21 @@ function WealthDashboardSummary({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={formattedTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+
                 <XAxis dataKey="date" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" />
-                <Tooltip
-                  formatter={(value) => [
-                    `$${Number(value).toFixed(2)}`,
-                    "Portfolio Value",
-                  ]}
-                  labelFormatter={(label) => `Date: ${label}`}
+
+                <YAxis
+                  stroke="#94a3b8"
+                  tickFormatter={(value) =>
+                    Number(value || 0).toLocaleString("en-SG")
+                  }
                 />
+
+                <Tooltip
+                  formatter={(value) => [money(value), "Portfolio Value"]}
+                  labelFormatter={(label) => `Date: ${formatDate(label)}`}
+                />
+
                 <Line
                   type="monotone"
                   dataKey="value"

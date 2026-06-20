@@ -4,11 +4,11 @@ import HealthBar from "./HealthBar";
 import AIPortfolioInsights from "./AIPortfolioInsights";
 
 function DashboardInsightsTabs({
-  performance,
-  totalValue,
-  monthlyPassiveIncome,
-  dividendCalendar,
-  totalDividends,
+  performance = [],
+  totalValue = 0,
+  monthlyPassiveIncome = 0,
+  dividendCalendar = [],
+  totalDividends = 0,
   portfolioGoal,
   yieldOnCost,
   riskLevel,
@@ -21,6 +21,12 @@ function DashboardInsightsTabs({
   worstPerformer,
 }) {
   const [activeInsightTab, setActiveInsightTab] = useState("review");
+
+  const money = (value) =>
+    `$${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   const allReturnsZero =
     performance.length > 1 &&
@@ -38,8 +44,28 @@ function DashboardInsightsTabs({
 
   const largestAllocation =
     largestPosition && totalValue > 0
-      ? ((largestPosition.currentValue / totalValue) * 100).toFixed(2)
+      ? (Number(largestPosition.currentValue || 0) / Number(totalValue || 0)) *
+        100
       : 0;
+
+  const dividendYield =
+    totalValue > 0
+      ? (Number(totalDividends || 0) / Number(totalValue || 0)) * 100
+      : 0;
+
+  const monthlyIncomeGoal = 100;
+
+  const incomeGap = Math.max(
+    0,
+    monthlyIncomeGoal - Number(monthlyPassiveIncome || 0)
+  );
+
+  const suggestedAction =
+    largestAllocation > 40
+      ? `Reduce ${largestPosition?.symbol || "largest holding"} concentration`
+      : incomeGap > 20
+      ? "Increase income-producing assets"
+      : "Portfolio allocation looks healthy";
 
   return (
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
@@ -94,46 +120,27 @@ function DashboardInsightsTabs({
             <h2 className="mb-5 text-xl font-bold">Portfolio Snapshot</h2>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <InsightCard
-                label="Largest Position"
-                value={
-                  largestPosition && totalValue > 0
-                    ? `${largestPosition.symbol} — ${largestAllocation}%`
-                    : "-"
-                }
-              />
-
               {!allReturnsZero && (
-                <>
-                  <InsightCard
-                    label="Best Performer"
-                    value={
-                      bestPerformer
-                        ? `${bestPerformer.symbol} — ${bestPerformer.profitLossPercent.toFixed(2)}%`
-                        : "-"
-                    }
-                    positive
-                  />
-
-                  <InsightCard
-                    label="Worst Performer"
-                    value={
-                      worstPerformer
-                        ? `${worstPerformer.symbol} — ${worstPerformer.profitLossPercent.toFixed(2)}%`
-                        : "-"
-                    }
-                    positive={worstPerformer?.profitLossPercent >= 0}
-                  />
-                </>
+                <InsightCard
+                  label="Worst Performer"
+                  value={
+                    worstPerformer
+                      ? `${worstPerformer.symbol} — ${Number(
+                          worstPerformer.profitLossPercent || 0
+                        ).toFixed(2)}%`
+                      : "-"
+                  }
+                  positive={Number(worstPerformer?.profitLossPercent || 0) >= 0}
+                />
               )}
 
               <InsightCard
                 label="Next Dividend"
                 value={
                   nextDividend
-                    ? `${nextDividend.symbol} — $${Number(
+                    ? `${nextDividend.symbol} — ${money(
                         nextDividend.expectedAmount
-                      ).toFixed(2)}`
+                      )}`
                     : "No Upcoming Dividend"
                 }
                 positive
@@ -147,25 +154,41 @@ function DashboardInsightsTabs({
               <InsightCard
                 label="Rebalancing Status"
                 value={
-                  largestAllocation > 40 ? "Review Allocation" : "Healthy Allocation"
+                  largestAllocation > 40
+                    ? "Review Allocation"
+                    : "Healthy Allocation"
                 }
                 positive={largestAllocation <= 40}
               />
 
               <InsightCard
-                label="Goal Progress"
-                value={`${
-                  portfolioGoal > 0
-                    ? ((totalValue / portfolioGoal) * 100).toFixed(2)
-                    : "0.00"
-                }%`}
-                positive
+                label="Dividend Yield"
+                value={`${dividendYield.toFixed(2)}%`}
+                positive={dividendYield >= 1}
               />
 
               <InsightCard
-                label="Monthly Passive Income"
-                value={`$${monthlyPassiveIncome.toFixed(2)}`}
-                positive
+                label="Income Goal Gap"
+                value={`${money(incomeGap)}/month`}
+                positive={incomeGap <= 0}
+              />
+
+              <InsightCard
+                label="Portfolio Concentration"
+                value={
+                  largestPosition
+                    ? `${largestPosition.symbol} — ${largestAllocation.toFixed(
+                        2
+                      )}%`
+                    : "-"
+                }
+                positive={largestAllocation < 40}
+              />
+
+              <InsightCard
+                label="Suggested Action"
+                value={suggestedAction}
+                positive={largestAllocation <= 40}
               />
             </div>
           </section>

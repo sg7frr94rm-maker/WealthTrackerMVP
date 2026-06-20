@@ -1,11 +1,23 @@
 import { useState } from "react";
 
 function PortfolioStressTest({
-  portfolioValue,
-  netWorth,
-  portfolioGoal,
+  portfolioValue = 0,
+  netWorth = 0,
+  portfolioGoal = 0,
 }) {
   const [customDrop, setCustomDrop] = useState(25);
+
+  const money = (value) =>
+    `$${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
+  const percent = (value) =>
+    `${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}%`;
 
   const scenarios = [-10, -20, -30, -40, -50, -customDrop];
 
@@ -13,22 +25,25 @@ function PortfolioStressTest({
     portfolioGoal > 0 ? (portfolioValue / portfolioGoal) * 100 : 0;
 
   const stressResults = scenarios.map((drop) => {
-    const dropPercent = Math.abs(drop);
+    const dropPercent = Math.abs(Number(drop || 0));
+
     const stressedPortfolioValue =
-      portfolioValue * (1 - dropPercent / 100);
+      Number(portfolioValue || 0) * (1 - dropPercent / 100);
 
-    const portfolioLoss = portfolioValue - stressedPortfolioValue;
+    const portfolioLoss =
+      Number(portfolioValue || 0) - stressedPortfolioValue;
 
-    const stressedNetWorth = netWorth - portfolioLoss;
+    const stressedNetWorth =
+      Number(netWorth || 0) - portfolioLoss;
 
     const goalProgress =
       portfolioGoal > 0
-        ? (stressedPortfolioValue / portfolioGoal) * 100
+        ? (stressedPortfolioValue / Number(portfolioGoal || 0)) * 100
         : 0;
 
     const recoveryNeeded =
       stressedPortfolioValue > 0
-        ? ((portfolioValue - stressedPortfolioValue) /
+        ? ((Number(portfolioValue || 0) - stressedPortfolioValue) /
             stressedPortfolioValue) *
           100
         : 0;
@@ -51,26 +66,27 @@ function PortfolioStressTest({
         </h2>
 
         <p className="mt-1 text-sm text-slate-400">
-          Simulate how market drawdowns may affect your portfolio value, net worth and goal progress.
+          Simulate how market drawdowns may affect your portfolio value, net
+          worth and goal progress.
         </p>
       </div>
 
       <div className="mb-6 grid gap-4 md:grid-cols-3">
         <StressCard
           title="Current Portfolio"
-          value={`$${portfolioValue.toFixed(2)}`}
+          value={money(portfolioValue)}
           positive
         />
 
         <StressCard
           title="Current Net Worth"
-          value={`$${netWorth.toFixed(2)}`}
+          value={money(netWorth)}
           positive
         />
 
         <StressCard
           title="Goal Progress"
-          value={`${currentGoalProgress.toFixed(2)}%`}
+          value={percent(currentGoalProgress)}
           positive
         />
       </div>
@@ -79,6 +95,7 @@ function PortfolioStressTest({
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h3 className="font-bold">Custom Stress Scenario</h3>
+
             <p className="mt-1 text-sm text-slate-400">
               Add your own market drop percentage.
             </p>
@@ -92,7 +109,9 @@ function PortfolioStressTest({
             <input
               type="number"
               value={customDrop}
-              onChange={(e) => setCustomDrop(Number(e.target.value))}
+              onChange={(e) =>
+                setCustomDrop(Math.max(0, Number(e.target.value)))
+              }
               className="h-12 w-40 rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 outline-none focus:border-emerald-500"
             />
           </div>
@@ -118,28 +137,28 @@ function PortfolioStressTest({
             <div className="grid gap-3 md:grid-cols-2">
               <MiniMetric
                 label="Portfolio Value"
-                value={`$${item.stressedPortfolioValue.toFixed(2)}`}
+                value={money(item.stressedPortfolioValue)}
               />
 
               <MiniMetric
                 label="Portfolio Loss"
-                value={`-$${item.portfolioLoss.toFixed(2)}`}
+                value={`-${money(item.portfolioLoss)}`}
                 negative
               />
 
               <MiniMetric
                 label="Net Worth"
-                value={`$${item.stressedNetWorth.toFixed(2)}`}
+                value={money(item.stressedNetWorth)}
               />
 
               <MiniMetric
                 label="Recovery Needed"
-                value={`${item.recoveryNeeded.toFixed(2)}%`}
+                value={percent(item.recoveryNeeded)}
               />
 
               <MiniMetric
                 label="Goal Progress"
-                value={`${item.goalProgress.toFixed(2)}%`}
+                value={percent(item.goalProgress)}
               />
             </div>
           </div>

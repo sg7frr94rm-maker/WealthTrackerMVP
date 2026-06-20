@@ -18,41 +18,45 @@ function WealthTabs({
 
   const totalLiabilities = Number(loans || 0);
 
-  const portfolioGoalProgress =
-    portfolioGoal > 0 ? (totalValue / portfolioGoal) * 100 : 0;
+  const money = (value) =>
+    `$${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
 
   return (
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
       <div className="mb-5">
         <h2 className="text-xl font-bold">Net Worth Overview</h2>
+
         <p className="mt-1 text-sm text-slate-400">
-          Measure your net worth, assets, liabilities and portfolio goal progress.
+          Measure your net worth, assets, liabilities and portfolio goal.
         </p>
       </div>
 
       <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Net Worth"
-          value={`$${Number(netWorth || 0).toFixed(2)}`}
+          value={money(netWorth)}
           positive={netWorth >= 0}
         />
 
         <MetricCard
           title="Total Assets"
-          value={`$${totalAssets.toFixed(2)}`}
+          value={money(totalAssets)}
           positive
         />
 
         <MetricCard
           title="Liabilities"
-          value={`$${totalLiabilities.toFixed(2)}`}
+          value={money(totalLiabilities)}
           positive={totalLiabilities === 0}
         />
 
         <MetricCard
           title="Portfolio Goal"
-          value={`${portfolioGoalProgress.toFixed(2)}%`}
-          positive={portfolioGoalProgress >= 50}
+          value={money(portfolioGoal)}
+          positive={portfolioGoal > 0}
         />
       </section>
 

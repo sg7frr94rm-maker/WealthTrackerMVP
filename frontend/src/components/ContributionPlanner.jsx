@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   getTargetAllocations,
   saveTargetAllocations,
 } from "../api/portfolioApi";
 
-function RebalancingPlanner({ performance, totalValue }) {
+function ContributionPlanner({ performance = [], totalValue = 0 }) {
   const [targets, setTargets] = useState({});
   const [status, setStatus] = useState("");
   const [monthlyContribution, setMonthlyContribution] = useState(1000);
@@ -22,11 +22,17 @@ function RebalancingPlanner({ performance, totalValue }) {
     loadTargets();
   }, []);
 
+  const money = (value) =>
+    `$${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
   const handleTargetChange = (symbol, value) => {
-    setTargets({
-      ...targets,
+    setTargets((prev) => ({
+      ...prev,
       [symbol]: Number(value),
-    });
+    }));
   };
 
   const handleSaveTargets = async () => {
@@ -41,33 +47,32 @@ function RebalancingPlanner({ performance, totalValue }) {
     }
   };
 
-  const totalTarget = Object.values(targets).reduce(
-    (sum, value) => sum + Number(value || 0),
-    0
+  const totalTarget = useMemo(
+    () =>
+      Object.values(targets).reduce(
+        (sum, value) => sum + Number(value || 0),
+        0
+      ),
+    [targets]
   );
 
   const useEqualWeightTarget = totalTarget === 0;
 
   const equalWeightTarget =
-    performance && performance.length > 0
-      ? 100 / performance.length
-      : 0;
-
-  const money = (value) =>
-    `$${Number(value || 0).toLocaleString("en-SG", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+    performance.length > 0 ? 100 / performance.length : 0;
 
   const getRecommendation = (item) => {
+    const currentValue = Number(item.currentValue || 0);
+
     const currentPercent =
-      totalValue > 0 ? (item.currentValue / totalValue) * 100 : 0;
+      totalValue > 0 ? (currentValue / totalValue) * 100 : 0;
 
     const targetPercent = useEqualWeightTarget
       ? equalWeightTarget
       : Number(targets[item.symbol] || 0);
+
     const targetValue = (targetPercent / 100) * totalValue;
-    const difference = targetValue - item.currentValue;
+    const difference = targetValue - currentValue;
 
     const rebalanceThresholdPercent = 1;
     const threshold = totalValue * (rebalanceThresholdPercent / 100);
@@ -89,7 +94,7 @@ function RebalancingPlanner({ performance, totalValue }) {
     };
   };
 
-  const recommendations = (performance || []).map((item) => ({
+  const recommendations = performance.map((item) => ({
     ...item,
     recommendation: getRecommendation(item),
   }));
@@ -101,22 +106,19 @@ function RebalancingPlanner({ performance, totalValue }) {
   const largestBuy = recommendations
     .filter((item) => item.recommendation.action === "Buy")
     .sort(
-      (a, b) =>
-        b.recommendation.difference - a.recommendation.difference
+      (a, b) => b.recommendation.difference - a.recommendation.difference
     )[0];
 
   const largestReduction = recommendations
     .filter((item) => item.recommendation.action === "Reduce")
     .sort(
-      (a, b) =>
-        a.recommendation.difference - b.recommendation.difference
+      (a, b) => a.recommendation.difference - b.recommendation.difference
     )[0];
 
   const buyRecommendations = recommendations
     .filter((item) => item.recommendation.action === "Buy")
     .sort(
-      (a, b) =>
-        b.recommendation.difference - a.recommendation.difference
+      (a, b) => b.recommendation.difference - a.recommendation.difference
     );
 
   const totalBuyGap = buyRecommendations.reduce(
@@ -132,12 +134,10 @@ function RebalancingPlanner({ performance, totalValue }) {
         : 0;
 
     const allocationPercent =
-      monthlyContribution > 0
-        ? (amount / monthlyContribution) * 100
-        : 0;
+      monthlyContribution > 0 ? (amount / monthlyContribution) * 100 : 0;
 
     const newPortfolioValue = totalValue + monthlyContribution;
-    const newAssetValue = item.currentValue + amount;
+    const newAssetValue = Number(item.currentValue || 0) + amount;
 
     const estimatedNewAllocation =
       newPortfolioValue > 0
@@ -170,12 +170,7 @@ function RebalancingPlanner({ performance, totalValue }) {
       ? "Moderate Drift"
       : "Significant Drift";
 
-  const rebalanceScore =
-    Math.max(
-      0,
-      100 -
-        assetsNeedingAction.length * 10
-    ); 
+  const alignmentScore = Math.max(0, 100 - assetsNeedingAction.length * 10);
 
   const portfolioStatusColor =
     portfolioStatus === "Well Balanced"
@@ -187,25 +182,22 @@ function RebalancingPlanner({ performance, totalValue }) {
   return (
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
       <div className="mb-5">
-        <h2 className="text-xl font-bold">
-          Portfolio Rebalancing Planner
-        </h2>
+        <h2 className="text-xl font-bold">Contribution Plan</h2>
 
         <p className="mt-1 text-sm text-slate-400">
-          Compare your current portfolio allocation against your target allocation.
+          Plan where your next investments should go to stay aligned with your
+          target allocation.
         </p>
       </div>
 
       <div className="mb-5 rounded-xl border border-slate-800 bg-slate-950 p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm text-slate-400">
-              Target Allocation Total
-            </p>
+            <p className="text-sm text-slate-400">Target Allocation Total</p>
 
             <p
               className={`mt-1 text-2xl font-bold ${
-                totalTarget === 100
+                totalTarget === 100 || totalTarget === 0
                   ? "text-emerald-400"
                   : "text-yellow-400"
               }`}
@@ -225,9 +217,9 @@ function RebalancingPlanner({ performance, totalValue }) {
               onClick={handleSaveTargets}
               disabled={totalTarget > 0 && totalTarget !== 100}
               className={`rounded-lg px-5 py-2 font-semibold ${
-                totalTarget === 100
-                ? "bg-emerald-600 hover:bg-emerald-500"
-                : "bg-slate-700 cursor-not-allowed"
+                totalTarget === 100 || totalTarget === 0
+                  ? "bg-emerald-600 hover:bg-emerald-500"
+                  : "cursor-not-allowed bg-slate-700"
               }`}
             >
               {status || "Save Targets"}
@@ -237,11 +229,7 @@ function RebalancingPlanner({ performance, totalValue }) {
       </div>
 
       <div className="mb-5 grid gap-4 md:grid-cols-6">
-        <SummaryCard
-          title="Portfolio Value"
-          value={money(totalValue)}
-          positive
-        />
+        <SummaryCard title="Portfolio Value" value={money(totalValue)} positive />
 
         <SummaryCard
           title="Portfolio Status"
@@ -250,15 +238,15 @@ function RebalancingPlanner({ performance, totalValue }) {
         />
 
         <SummaryCard
-          title="Rebalance Score"
-          value={`${rebalanceScore}/100`}
+          title="Portfolio Alignment"
+          value={`${alignmentScore}/100`}
           customClass={
-            rebalanceScore >= 80
+            alignmentScore >= 80
               ? "text-emerald-400"
-              : rebalanceScore >= 60
+              : alignmentScore >= 60
               ? "text-yellow-400"
               : "text-red-400"
-            }
+          }
         />
 
         <SummaryCard
@@ -267,10 +255,12 @@ function RebalancingPlanner({ performance, totalValue }) {
         />
 
         <SummaryCard
-          title="Largest Buy"
+          title="Recommended Investment"
           value={
             largestBuy
-              ? `${largestBuy.symbol} ${money(largestBuy.recommendation.difference)}`
+              ? `${largestBuy.symbol} ${money(
+                  largestBuy.recommendation.difference
+                )}`
               : "None"
           }
           positive={Boolean(largestBuy)}
@@ -281,8 +271,8 @@ function RebalancingPlanner({ performance, totalValue }) {
           value={
             largestReduction
               ? `${largestReduction.symbol} ${money(
-              Math.abs(largestReduction.recommendation.difference)
-              )}`
+                  Math.abs(largestReduction.recommendation.difference)
+                )}`
               : "None"
           }
           negative={Boolean(largestReduction)}
@@ -292,22 +282,25 @@ function RebalancingPlanner({ performance, totalValue }) {
       <div className="mb-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
         <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h3 className="font-bold">Contribution Rebalancer</h3>
+            <h3 className="font-bold">Recommended Contribution Plan</h3>
+
             <p className="mt-1 text-sm text-slate-400">
-              Plan where your next monthly investment should go.
+              Recommended allocation for your next investment based on your
+              portfolio targets.
             </p>
           </div>
 
           <div>
             <label className="mb-1 block text-sm text-slate-400">
-              Monthly Contribution
+              Investment Amount
             </label>
 
             <input
               type="number"
+              min="0"
               value={monthlyContribution}
               onChange={(e) =>
-                setMonthlyContribution(Number(e.target.value))
+                setMonthlyContribution(Math.max(0, Number(e.target.value)))
               }
               className="w-40 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-emerald-500"
             />
@@ -326,17 +319,27 @@ function RebalancingPlanner({ performance, totalValue }) {
           </div>
         </div>
 
-        <div className="mb-4 grid gap-3 md:grid-cols-3">
-          <MiniCard
-            title="Contribution"
-            value={money(monthlyContribution)}
-          />
+        {largestBuy && (
+          <div className="mb-5 rounded-xl border border-emerald-700 bg-emerald-950/20 p-5">
+            <h3 className="text-lg font-bold text-emerald-400">
+              Next Investment Recommendation
+            </h3>
 
-          <MiniCard
-            title="Allocated"
-            value={money(totalAllocated)}
-            positive
-          />
+            <p className="mt-2 text-2xl font-bold">
+              Invest {money(monthlyContribution)} into {largestBuy.symbol}
+            </p>
+
+            <p className="mt-2 text-slate-300">
+              This investment helps bring your portfolio closer to its target
+              allocation.
+            </p>
+          </div>
+        )}
+
+        <div className="mb-4 grid gap-3 md:grid-cols-3">
+          <MiniCard title="Investment Amount" value={money(monthlyContribution)} />
+
+          <MiniCard title="Allocated" value={money(totalAllocated)} positive />
 
           <MiniCard
             title="Remaining Cash"
@@ -346,7 +349,8 @@ function RebalancingPlanner({ performance, totalValue }) {
 
         {contributionPlan.length === 0 ? (
           <p className="text-sm text-slate-400">
-            No contribution rebalancing needed. Your portfolio is close to target allocation.
+            No contribution planning needed. Your portfolio is close to target
+            allocation.
           </p>
         ) : (
           <div className="grid gap-3 md:grid-cols-3">
@@ -366,7 +370,7 @@ function RebalancingPlanner({ performance, totalValue }) {
                 </p>
 
                 <p className="mt-1 text-sm text-slate-400">
-                  {item.allocationPercent.toFixed(2)}% of contribution
+                  {item.allocationPercent.toFixed(2)}% of investment
                 </p>
 
                 <div className="mt-3 rounded-lg bg-slate-950 p-3 text-sm">
@@ -403,23 +407,16 @@ function RebalancingPlanner({ performance, totalValue }) {
               const result = item.recommendation;
 
               return (
-                <tr
-                  key={item.symbol}
-                  className="border-b border-slate-800"
-                >
+                <tr key={item.symbol} className="border-b border-slate-800">
                   <td className="p-3">
-                    <div className="font-semibold">
-                      {item.symbol}
-                    </div>
+                    <div className="font-semibold">{item.symbol}</div>
 
                     <div className="mt-1 max-w-[260px] truncate text-xs text-slate-400">
                       {item.name || item.type}
                     </div>
                   </td>
 
-                  <td className="p-3">
-                    {result.currentPercent.toFixed(2)}%
-                  </td>
+                  <td className="p-3">{result.currentPercent.toFixed(2)}%</td>
 
                   <td className="p-3">
                     <input
@@ -429,23 +426,16 @@ function RebalancingPlanner({ performance, totalValue }) {
                       step="1"
                       value={targets[item.symbol] ?? ""}
                       onChange={(e) =>
-                        handleTargetChange(
-                          item.symbol,
-                          e.target.value
-                        )
+                        handleTargetChange(item.symbol, e.target.value)
                       }
                       placeholder="0"
                       className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-emerald-500"
                     />
                   </td>
 
-                  <td className="p-3">
-                    {money(item.currentValue)}
-                  </td>
+                  <td className="p-3">{money(item.currentValue)}</td>
 
-                  <td className="p-3">
-                    {money(result.targetValue)}
-                  </td>
+                  <td className="p-3">{money(result.targetValue)}</td>
 
                   <td
                     className={`p-3 font-semibold ${
@@ -481,7 +471,8 @@ function RebalancingPlanner({ performance, totalValue }) {
 
       {!useEqualWeightTarget && totalTarget !== 100 && (
         <p className="mt-4 text-sm text-yellow-400">
-          Your target allocation is {totalTarget.toFixed(2)}%. Adjust targets until it equals 100%.
+          Your target allocation is {totalTarget.toFixed(2)}%. Adjust targets
+          until it equals 100%.
         </p>
       )}
     </section>
@@ -491,9 +482,7 @@ function RebalancingPlanner({ performance, totalValue }) {
 function SummaryCard({ title, value, positive, negative, customClass }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-      <p className="text-sm text-slate-400">
-        {title}
-      </p>
+      <p className="text-sm text-slate-400">{title}</p>
 
       <p
         className={`mt-2 text-xl font-bold ${
@@ -528,4 +517,4 @@ function MiniCard({ title, value, positive }) {
   );
 }
 
-export default RebalancingPlanner;
+export default ContributionPlanner;
