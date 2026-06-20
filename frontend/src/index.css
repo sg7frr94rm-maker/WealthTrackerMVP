@@ -1,1 +1,82 @@
 @import "tailwindcss";
+@import "tailwindcss";
+
+/* ==========================================
+Amplify Cognito Login Screen Styling
+========================================== */
+
+[data-amplify-authenticator] {
+min-height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+
+background:
+radial-gradient(
+circle at top left,
+rgba(16, 185, 129, 0.25),
+transparent 35%
+),
+radial-gradient(
+circle at bottom right,
+rgba(59, 130, 246, 0.2),
+transparent 35%
+),
+linear-gradient(
+135deg,
+#020617,
+#0f172a,
+#022c22
+);
+}
+
+[data-amplify-authenticator] [data-amplify-router] {
+width: 100%;
+max-width: 460px;
+
+border-radius: 24px;
+border: 1px solid #334155;
+
+background: rgba(15, 23, 42, 0.95);
+
+backdrop-filter: blur(12px);
+
+box-shadow:
+0 25px 60px rgba(0, 0, 0, 0.45);
+
+padding: 1rem;
+}
+
+.amplify-heading {
+color: white !important;
+}
+
+.amplify-label {
+color: #cbd5e1 !important;
+}
+
+.amplify-input {
+background: #020617 !important;
+color: white !important;
+border-color: #334155 !important;
+}
+
+.amplify-input:focus {
+border-color: #10b981 !important;
+}
+
+.amplify-button--primary {
+background: #059669 !important;
+}
+
+.amplify-button--primary:hover {
+background: #10b981 !important;
+}
+
+.amplify-tabs-item {
+color: #cbd5e1 !important;
+}
+
+.amplify-tabs-item[data-state="active"] {
+color: #10b981 !important;
+}

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Authenticator } from "@aws-amplify/ui-react";
+import "@aws-amplify/ui-react/styles.css";
 
 import {
   getPerformance,
@@ -20,7 +22,6 @@ import {
   backupDatabase,
 } from "./api/portfolioApi";
 
-import MetricCard from "./components/MetricCard";
 import { AnimatePresence, motion } from "framer-motion";
 import MarketNews from "./components/MarketNews";
 import MilestoneTabs from "./components/MilestoneTabs";
@@ -31,6 +32,16 @@ import GoalsTabs from "./components/GoalsTabs";
 import WealthDashboardSummary from "./components/WealthDashboardSummary";
 
 function App() {
+  return (
+    <Authenticator>
+      {({ signOut, user }) => (
+        <WealthTrackerApp signOut={signOut} user={user} />
+      )}
+    </Authenticator>
+  );
+}
+
+function WealthTrackerApp({ signOut, user }) {
   const [activeTab, setActiveTab] = useState("wealth");
   const [performance, setPerformance] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -84,10 +95,10 @@ function App() {
         getNetWorthSettings(),
       ]);
 
-      setPerformance(performanceRes.data.performance);
-      setTransactions(transactionsRes.data.data);
-      setTrendData(trendRes.data);
-      setDividends(dividendsRes.data.data);
+      setPerformance(performanceRes.data.performance || []);
+      setTransactions(transactionsRes.data.data || []);
+      setTrendData(trendRes.data || []);
+      setDividends(dividendsRes.data.data || []);
       setStats(statsRes.data);
       setPortfolioGoal(settingsRes.data.portfolioGoal);
       setDividendCalendar(dividendCalendarRes.data || []);
@@ -199,7 +210,6 @@ function App() {
   const totalProfitLoss = stats?.profitLoss || 0;
   const totalDividends = stats?.totalDividends || 0;
   const yieldOnCost = stats?.yieldOnCost || 0;
-  const totalDividendIncome = stats?.annualDividendIncome || 0;
   const monthlyPassiveIncome = stats?.monthlyPassiveIncome || 0;
 
   const cash = Number(netWorthData.cash || 0);
@@ -294,43 +304,6 @@ function App() {
       ? "Moderate Concentration Risk"
       : "Healthy Diversification";
 
-  const strengths = [];
-  const opportunities = [];
-
-  if (totalValue >= 50000) {
-    strengths.push("Strong portfolio base above $50,000.");
-  }
-
-  if (goalProgress >= 50) {
-    strengths.push("Good progress toward your financial goal.");
-  }
-
-  if (totalReturnPercent >= 0) {
-    strengths.push("Portfolio is currently maintaining capital.");
-  }
-
-  if (strengths.length === 0) {
-    strengths.push(
-      "Portfolio is actively tracked and progressing toward long-term wealth accumulation."
-    );
-  }
-
-  if (assetTypeData.length === 1) {
-    opportunities.push("Portfolio is concentrated in a single asset type.");
-  }
-
-  if (yieldOnCost < 2) {
-    opportunities.push(
-      "Dividend income can be improved with income-focused assets."
-    );
-  }
-
-  if (concentrationPercent > 40) {
-    opportunities.push(
-      "Largest position exceeds 40%; diversification may reduce risk."
-    );
-  }
-
   const colors = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444"];
 
   return (
@@ -344,6 +317,10 @@ function App() {
           <p className="mt-3 text-slate-400">
             Track ETFs, mutual funds, returns, allocation, dividends and
             long-term wealth progress.
+          </p>
+
+          <p className="mt-2 text-sm text-slate-500">
+            Signed in as {user?.signInDetails?.loginId || user?.username}
           </p>
 
           <div className="mt-5 flex flex-wrap justify-center gap-3">
@@ -366,6 +343,13 @@ function App() {
               className="rounded-lg bg-indigo-600 px-4 py-2 font-semibold hover:bg-indigo-500"
             >
               Generate Wealth Report
+            </button>
+
+            <button
+              onClick={signOut}
+              className="rounded-lg bg-red-600 px-4 py-2 font-semibold hover:bg-red-500"
+            >
+              Logout
             </button>
           </div>
         </header>
@@ -429,30 +413,28 @@ function App() {
             {activeTab === "market" && <MarketNews />}
 
             {activeTab === "portfolio" && (
-              <>
-                <PortfolioTabs
-                  performance={performance}
-                  transactions={transactions}
-                  totalValue={totalValue}
-                  allocationData={allocationData}
-                  assetTypeData={assetTypeData}
-                  colors={colors}
-                  form={form}
-                  setForm={setForm}
-                  editingId={editingId}
-                  handleChange={handleChange}
-                  handleSubmit={handleSubmit}
-                  handleEdit={handleEdit}
-                  handleDelete={handleDelete}
-                  monthlyPassiveIncome={monthlyPassiveIncome}
-                  totalDividends={totalDividends}
-                  dividendForm={dividendForm}
-                  handleDividendChange={handleDividendChange}
-                  handleDividendSubmit={handleDividendSubmit}
-                  dividends={dividends}
-                  handleDividendDelete={handleDividendDelete}
-                />
-              </>
+              <PortfolioTabs
+                performance={performance}
+                transactions={transactions}
+                totalValue={totalValue}
+                allocationData={allocationData}
+                assetTypeData={assetTypeData}
+                colors={colors}
+                form={form}
+                setForm={setForm}
+                editingId={editingId}
+                handleChange={handleChange}
+                handleSubmit={handleSubmit}
+                handleEdit={handleEdit}
+                handleDelete={handleDelete}
+                monthlyPassiveIncome={monthlyPassiveIncome}
+                totalDividends={totalDividends}
+                dividendForm={dividendForm}
+                handleDividendChange={handleDividendChange}
+                handleDividendSubmit={handleDividendSubmit}
+                dividends={dividends}
+                handleDividendDelete={handleDividendDelete}
+              />
             )}
 
             {activeTab === "insights" && (
@@ -465,8 +447,6 @@ function App() {
                 totalDividends={totalDividends}
                 portfolioGoal={portfolioGoal}
                 yieldOnCost={yieldOnCost}
-                strengths={strengths}
-                opportunities={opportunities}
                 riskLevel={riskLevel}
                 overallHealthScore={overallHealthScore}
                 diversificationScore={diversificationScore}
