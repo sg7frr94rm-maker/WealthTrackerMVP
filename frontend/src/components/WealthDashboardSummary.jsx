@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import {
   LineChart,
   Line,
@@ -23,6 +24,8 @@ function WealthDashboardSummary({
   bestPerformer,
   worstPerformer,
 }) {
+  const [trendRange, setTrendRange] = useState("ALL");
+
   const portfolioProgress =
     portfolioGoal > 0 ? (portfolioValue / portfolioGoal) * 100 : 0;
 
@@ -64,19 +67,46 @@ function WealthDashboardSummary({
       ? (Number(largestHolding.currentValue || 0) / portfolioValue) * 100
       : 0;
 
-  const formattedTrendData = [...(trendData || [])]
-    .map((item) => ({
-      ...item,
-      value: Number(item.value || 0),
-    }))
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  const formattedTrendData = useMemo(() => {
+    return [...(trendData || [])]
+      .map((item) => ({
+        ...item,
+        value: Number(item.value || 0),
+      }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [trendData]);
+
+  const filteredTrendData = useMemo(() => {
+    if (trendRange === "ALL") {
+      return formattedTrendData;
+    }
+
+    const days =
+      trendRange === "1M"
+        ? 30
+        : trendRange === "1Y"
+        ? 365
+        : trendRange === "3Y"
+        ? 365 * 3
+        : 365 * 5;
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    return formattedTrendData.filter(
+      (item) => new Date(item.date) >= cutoff
+    );
+  }, [formattedTrendData, trendRange]);
+
+  const displayTrendData =
+    filteredTrendData.length > 0 ? filteredTrendData : formattedTrendData;
 
   const trendStartDate =
-    formattedTrendData.length > 0 ? formattedTrendData[0].date : null;
+    displayTrendData.length > 0 ? displayTrendData[0].date : null;
 
   const trendEndDate =
-    formattedTrendData.length > 0
-      ? formattedTrendData[formattedTrendData.length - 1].date
+    displayTrendData.length > 0
+      ? displayTrendData[displayTrendData.length - 1].date
       : null;
 
   return (
@@ -176,6 +206,22 @@ function WealthDashboardSummary({
                 Track how your portfolio value changes over time from saved
                 snapshots.
               </p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {["1M", "1Y", "3Y", "5Y", "ALL"].map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setTrendRange(range)}
+                    className={`rounded-lg px-3 py-1 text-xs font-semibold ${
+                      trendRange === range
+                        ? "bg-emerald-600 text-white"
+                        : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    }`}
+                  >
+                    {range === "ALL" ? "All" : range}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {largestHolding && (
@@ -191,7 +237,7 @@ function WealthDashboardSummary({
 
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={formattedTrendData}>
+              <LineChart data={displayTrendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
 
                 <XAxis dataKey="date" stroke="#94a3b8" />

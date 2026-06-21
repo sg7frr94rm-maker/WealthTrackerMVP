@@ -117,3 +117,9 @@ export const getMarketNews = () =>
 
 export const getOpportunities = () =>
   axios.get(`${API_URL}/opportunities`);
+
+export const refreshPrices = () =>
+  axios.post(`${API_URL}/prices/refresh`);
+
+export const getPriceStatus = () =>
+  axios.get(`${API_URL}/prices/status`);

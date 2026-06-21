@@ -77,6 +77,29 @@ function NetWorthTracker({ investmentValue }) {
     setTimeout(() => setStatus(""), 2000);
   };
 
+  const assetAllocation =
+    totalAssets > 0 ? (safeInvestmentValue / totalAssets) * 100 : 0;
+
+  let insight = "";
+
+  if (netWorth >= 100000) {
+    insight +=
+      "Your net worth has exceeded six figures, indicating a strong wealth foundation. ";
+  }
+
+  if (assetAllocation > 70) {
+    insight +=
+      "A large portion of your assets is invested, which may support long-term growth but increases market exposure. ";
+  }
+
+  if (debtRatio < 20) {
+    insight +=
+      "Your debt ratio is relatively low, providing financial flexibility. ";
+  } else if (debtRatio >= 50) {
+    insight +=
+      "Your liabilities represent a significant portion of assets and may deserve closer monitoring. ";
+  }
+
   return (
     <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -234,11 +257,10 @@ function NetWorthTracker({ investmentValue }) {
       <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-5">
         <h3 className="font-bold">Net Worth Insight</h3>
 
-        <p className="mt-2 text-sm text-slate-400">
-          Your investment portfolio is one part of your total net worth.
-          Tracking cash, CPF, other assets, and liabilities gives a clearer
-          picture of your overall financial position.
-        </p>
+      <p className="mt-2 text-sm text-slate-400">
+        {insight ||
+          "Your net worth profile is currently stable. Continue tracking assets, liabilities, and investment growth over time to identify meaningful trends."}
+      </p>
       </div>
     </section>
   );

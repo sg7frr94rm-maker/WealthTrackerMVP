@@ -62,8 +62,6 @@ function MarketNews() {
     ),
   ];
 
-  const affectedHoldingsCount = affectedHoldings.length;
-
   const latestNewsDate =
     news.length > 0
       ? new Date(
@@ -87,24 +85,17 @@ function MarketNews() {
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
       <div className="mb-5">
         <h2 className="text-xl font-bold">Market Intelligence</h2>
-
         <p className="mt-1 text-sm text-slate-400">
           Review market news impact and investment opportunities.
         </p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
-        <TabButton
-          active={activeTab === "news"}
-          onClick={() => setActiveTab("news")}
-        >
+        <TabButton active={activeTab === "news"} onClick={() => setActiveTab("news")}>
           Market News
         </TabButton>
 
-        <TabButton
-          active={activeTab === "opportunities"}
-          onClick={() => setActiveTab("opportunities")}
-        >
+        <TabButton active={activeTab === "opportunities"} onClick={() => setActiveTab("opportunities")}>
           Investment Opportunities
         </TabButton>
       </div>
@@ -114,7 +105,6 @@ function MarketNews() {
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <h3 className="text-lg font-bold">Market News Impact</h3>
-
               <p className="mt-1 text-sm text-slate-400">
                 News that may affect your current ETFs, mutual funds, REITs and
                 market sentiment.
@@ -130,11 +120,7 @@ function MarketNews() {
           </div>
 
           <div className="mb-6 grid gap-4 md:grid-cols-4">
-            <SentimentCard
-              title="Overall Sentiment"
-              value={overallSentiment}
-              type={overallSentiment}
-            />
+            <SentimentCard title="Overall Sentiment" value={overallSentiment} type={overallSentiment} />
 
             <SentimentCard
               title="Market Risk Level"
@@ -148,17 +134,9 @@ function MarketNews() {
               }
             />
 
-            <SentimentCard
-              title="Affected Holdings"
-              value={affectedHoldingsCount}
-              type="Neutral"
-            />
+            <SentimentCard title="Affected Holdings" value={affectedHoldings.length} type="Neutral" />
 
-            <SentimentCard
-              title="Latest News Date"
-              value={latestNewsDate}
-              type="Neutral"
-            />
+            <SentimentCard title="Latest News Date" value={latestNewsDate} type="Neutral" />
           </div>
 
           {affectedHoldings.length > 0 && (
@@ -196,43 +174,37 @@ function MarketNews() {
                     rel="noreferrer"
                     className="rounded-xl border border-slate-800 bg-slate-950 p-5 transition hover:border-emerald-600 hover:bg-slate-900"
                   >
-                    <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                      <div className="space-y-1">
+                    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                      <div>
                         <p className="text-xs text-slate-400">
                           Related: {item.relatedTo || "Market"}
                         </p>
 
-                        <p className="text-xs font-semibold text-slate-300">
+                        <p className="mt-1 text-xs font-semibold text-slate-300">
                           Affects: {item.affects || "General Market"}
-                        </p>
-
-                        <p className="text-xs text-slate-400">
-                          Market Risk:{" "}
-                          <span
-                            className={
-                              itemRiskLevel === "High"
-                                ? "font-semibold text-red-300"
-                                : itemRiskLevel === "Medium"
-                                ? "font-semibold text-yellow-300"
-                                : "font-semibold text-emerald-300"
-                            }
-                          >
-                            {itemRiskLevel}
-                          </span>
-                        </p>
-
-                        <p className="text-xs text-slate-400">
-                          Action:{" "}
-                          <span className="font-semibold text-amber-300">
-                            {actionSuggestion}
-                          </span>
                         </p>
                       </div>
 
                       <ImpactBadge impact={item.impact} />
                     </div>
 
-                    <h3 className="font-semibold text-white">{item.title}</h3>
+                    <div className="mb-4 flex flex-col gap-3 md:flex-row">
+                      <InfoPill
+                        label="Market Risk"
+                        value={itemRiskLevel}
+                        type={itemRiskLevel}
+                      />
+
+                      <InfoPill
+                        label="Action"
+                        value={actionSuggestion}
+                        type={itemRiskLevel}
+                      />
+                    </div>
+
+                    <h3 className="border-t border-slate-800 pt-4 font-semibold text-white">
+                      {item.title}
+                    </h3>
 
                     <p className="mt-2 text-xs text-slate-500">
                       {item.source || "Unknown source"} •{" "}
@@ -250,6 +222,22 @@ function MarketNews() {
 
       {activeTab === "opportunities" && <Opportunities />}
     </section>
+  );
+}
+
+function InfoPill({ label, value, type }) {
+  const valueClass =
+    type === "High"
+      ? "text-red-400"
+      : type === "Medium"
+      ? "text-yellow-300"
+      : "text-emerald-400";
+
+  return (
+    <div className="flex min-w-[220px] items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-xs">
+      <span className="text-slate-400">{label}:</span>
+      <span className={`font-bold ${valueClass}`}>{value}</span>
+    </div>
   );
 }
 

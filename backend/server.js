@@ -4,6 +4,7 @@ const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
 const Database = require("better-sqlite3");
+const cron = require("node-cron");
 const PDFDocument = require("pdfkit");
 const Parser = require("rss-parser");
 const parser = new Parser();
@@ -165,6 +166,15 @@ db.prepare(`
   VALUES ('portfolioGoal', '100000')
 `).run();
 
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS market_prices (
+    symbol TEXT PRIMARY KEY,
+    price REAL NOT NULL,
+    source TEXT,
+    status TEXT,
+    updatedAt TEXT
+  )
+`).run();
 
 /* =========================
    PRICE FUNCTION
@@ -239,6 +249,116 @@ async function getYahooPrice(symbol) {
     };
   }
 }
+
+async function refreshAllMarketPrices() {
+  const symbols = [
+    ...new Set(
+      db
+        .prepare("SELECT DISTINCT symbol FROM transactions")
+        .all()
+        .map((row) => row.symbol)
+    ),
+  ];
+
+  let updated = 0;
+  let live = 0;
+  let fallback = 0;
+
+  for (const symbol of symbols) {
+    const result = await getYahooPrice(symbol);
+
+    db.prepare(`
+      INSERT INTO market_prices (
+        symbol,
+        price,
+        source,
+        status,
+        updatedAt
+      )
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(symbol)
+      DO UPDATE SET
+        price = excluded.price,
+        source = excluded.source,
+        status = excluded.status,
+        updatedAt = excluded.updatedAt
+    `).run(
+      symbol,
+      result.price,
+      result.source,
+      result.status,
+      result.updatedAt
+    );
+
+    updated++;
+
+    if (result.status === "Live") {
+      live++;
+    } else {
+      fallback++;
+    }
+  }
+
+  console.log(
+    `[AUTO REFRESH] Updated ${updated} prices at ${new Date().toLocaleString(
+      "en-SG"
+    )}`
+  );
+
+  return {
+    updated,
+    live,
+    fallback,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+cron.schedule(
+  "0 8 * * *",
+  async () => {
+    console.log("[AUTO REFRESH] Starting scheduled refresh...");
+
+    try {
+      await refreshAllMarketPrices();
+    } catch (err) {
+      console.error("[AUTO REFRESH ERROR]", err);
+    }
+  },
+  {
+    timezone: "Asia/Singapore",
+  }
+);
+
+app.post("/prices/refresh", async (req, res) => {
+  try {
+    const result = await refreshAllMarketPrices();
+
+    res.json({
+      success: true,
+      message: "Market prices refreshed successfully",
+      ...result,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+app.get("/prices/status", (req, res) => {
+  const prices = db
+    .prepare(`
+      SELECT *
+      FROM market_prices
+      ORDER BY symbol
+    `)
+    .all();
+
+  res.json(prices);
+});
 
 /* =========================
    ROOT
@@ -403,7 +523,39 @@ app.get("/portfolio/performance", async (req, res) => {
 
   for (const tx of transactions) {
     if (!priceData[tx.symbol]) {
-      priceData[tx.symbol] = await getYahooPrice(tx.symbol);
+      const cachedPrice = db
+  .prepare(`
+    SELECT *
+    FROM market_prices
+    WHERE symbol = ?
+  `)
+  .get(tx.symbol);
+
+if (cachedPrice) {
+  priceData[tx.symbol] = cachedPrice;
+} else {
+  const freshPrice = await getYahooPrice(tx.symbol);
+
+  priceData[tx.symbol] = freshPrice;
+
+  db.prepare(`
+    INSERT OR REPLACE INTO market_prices
+    (
+      symbol,
+      price,
+      source,
+      status,
+      updatedAt
+    )
+    VALUES (?, ?, ?, ?, ?)
+  `).run(
+    tx.symbol,
+    freshPrice.price,
+    freshPrice.source,
+    freshPrice.status,
+    freshPrice.updatedAt
+  );
+}
     }
   }
 
@@ -659,11 +811,12 @@ app.get("/watchlist", async (req, res) => {
   const watchlist = [];
 
   for (const item of items) {
-    const price = await getYahooPrice(item.symbol);
+    const priceInfo = await getYahooPrice(item.symbol);
+    const price = Number(priceInfo.price || 0);
     const targetPrice = Number(item.targetPrice || 0);
 
     const distanceToTarget =
-      targetPrice > 0 && price > 0
+      targetPrice > 0
         ? ((price - targetPrice) / targetPrice) * 100
         : 0;
 
@@ -800,7 +953,7 @@ app.get("/report/wealth", async (req, res) => {
     }
 
     totalInvested += tx.units * tx.buyPrice;
-    currentValue += tx.units * currentPrices[tx.symbol];
+    currentValue += tx.units * Number(currentPrices[tx.symbol].price || 0);
   }
 
   const totalDividends = dividends.reduce(
@@ -895,7 +1048,7 @@ app.get("/report/wealth", async (req, res) => {
   doc
     .fontSize(19)
     .fillColor("#000000")
-    .text("Investment Wealth Report", left, 34);
+    .text("Wealth Investment Report", left, 34);
 
   doc
     .fontSize(8.5)
@@ -947,7 +1100,7 @@ app.get("/report/wealth", async (req, res) => {
 
   Object.entries(summary).forEach(([symbol, data]) => {
     const avgCost = data.units > 0 ? data.invested / data.units : 0;
-    const currentVal = data.units * (currentPrices[symbol] || 0);
+    const currentVal = data.units * Number(currentPrices[symbol]?.price || 0);
     const assetName = assetNames[symbol] || symbol;
 
     const startY = doc.y;
@@ -1073,7 +1226,7 @@ app.get("/report/wealth", async (req, res) => {
   );
 
   doc.fontSize(7.8).fillColor("#64748b");
-  doc.text("Generated by Investment Wealth Tracker", left, 775, {
+  doc.text("Generated by Wealth Investment Tracker", left, 775, {
     align: "center",
   });
   doc.text("For personal financial tracking only.", {
@@ -1432,6 +1585,16 @@ app.get("/health", (req, res) => {
     timestamp: new Date(),
   });
 });
+
+(async () => {
+  try {
+    console.log("[STARTUP] Refreshing market prices...");
+    await refreshAllMarketPrices();
+    console.log("[STARTUP] Market prices refreshed.");
+  } catch (err) {
+    console.error("[STARTUP ERROR]", err);
+  }
+})();
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

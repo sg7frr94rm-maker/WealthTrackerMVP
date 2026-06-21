@@ -12,7 +12,7 @@ function AuthLayout({ children }) {
         
         <div className="mb-8 text-center">
           <h1 className="text-5xl font-bold text-white">
-            Investment Wealth Tracker
+            Wealth Investment Tracker
           </h1>
 
           <p className="mt-3 text-slate-400">

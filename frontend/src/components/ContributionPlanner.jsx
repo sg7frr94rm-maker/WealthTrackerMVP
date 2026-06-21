@@ -22,22 +22,102 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
     loadTargets();
   }, []);
 
-  const money = (value) =>
+  const money = (value, decimals = 2) =>
     `$${Number(value || 0).toLocaleString("en-SG", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
     })}`;
+
+  const percent = (value, decimals = 2) =>
+    `${Number(value || 0).toLocaleString("en-SG", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })}%`;
+
+  const currentAllocationMap = useMemo(() => {
+    const map = {};
+
+    performance.forEach((item) => {
+      const currentValue = Number(item.currentValue || 0);
+
+      map[item.symbol] =
+        totalValue > 0 ? (currentValue / Number(totalValue || 0)) * 100 : 0;
+    });
+
+    return map;
+  }, [performance, totalValue]);
+
+  const effectiveTargets = useMemo(() => {
+    const result = {};
+
+    performance.forEach((item) => {
+      const savedTarget = targets[item.symbol];
+
+      result[item.symbol] =
+        savedTarget !== undefined && savedTarget !== ""
+          ? Number(savedTarget || 0)
+          : Number(currentAllocationMap[item.symbol] || 0);
+    });
+
+    return result;
+  }, [performance, targets, currentAllocationMap]);
+
+  const totalTarget = useMemo(
+    () =>
+      Object.values(effectiveTargets).reduce(
+        (sum, value) => sum + Number(value || 0),
+        0
+      ),
+    [effectiveTargets]
+  );
+
+  const hasSavedTargets = Object.keys(targets).length > 0;
 
   const handleTargetChange = (symbol, value) => {
     setTargets((prev) => ({
       ...prev,
-      [symbol]: Number(value),
+      [symbol]: value === "" ? "" : Number(value),
     }));
+  };
+
+  const handleUseCurrentAllocation = () => {
+    const currentTargets = {};
+
+    performance.forEach((item) => {
+      currentTargets[item.symbol] = Number(
+        currentAllocationMap[item.symbol] || 0
+      ).toFixed(2);
+    });
+
+    setTargets(currentTargets);
+  };
+
+  const handleEqualWeight = () => {
+    const equalWeight =
+      performance.length > 0 ? Number((100 / performance.length).toFixed(2)) : 0;
+
+    const equalTargets = {};
+
+    performance.forEach((item, index) => {
+      if (index === performance.length - 1) {
+        const previousTotal = Object.values(equalTargets).reduce(
+          (sum, value) => sum + Number(value || 0),
+          0
+        );
+
+        equalTargets[item.symbol] = Number((100 - previousTotal).toFixed(2));
+      } else {
+        equalTargets[item.symbol] = equalWeight;
+      }
+    });
+
+    setTargets(equalTargets);
   };
 
   const handleSaveTargets = async () => {
     try {
-      await saveTargetAllocations(targets);
+      await saveTargetAllocations(effectiveTargets);
+      setTargets(effectiveTargets);
       setStatus("Saved");
       setTimeout(() => setStatus(""), 2000);
     } catch (error) {
@@ -47,30 +127,13 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
     }
   };
 
-  const totalTarget = useMemo(
-    () =>
-      Object.values(targets).reduce(
-        (sum, value) => sum + Number(value || 0),
-        0
-      ),
-    [targets]
-  );
-
-  const useEqualWeightTarget = totalTarget === 0;
-
-  const equalWeightTarget =
-    performance.length > 0 ? 100 / performance.length : 0;
-
   const getRecommendation = (item) => {
     const currentValue = Number(item.currentValue || 0);
 
     const currentPercent =
       totalValue > 0 ? (currentValue / totalValue) * 100 : 0;
 
-    const targetPercent = useEqualWeightTarget
-      ? equalWeightTarget
-      : Number(targets[item.symbol] || 0);
-
+    const targetPercent = Number(effectiveTargets[item.symbol] || 0);
     const targetValue = (targetPercent / 100) * totalValue;
     const difference = targetValue - currentValue;
 
@@ -179,6 +242,8 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
       ? "text-yellow-400"
       : "text-red-400";
 
+  const targetIsValid = Math.abs(totalTarget - 100) < 0.05;
+
   return (
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
       <div className="mb-5">
@@ -197,33 +262,51 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
 
             <p
               className={`mt-1 text-2xl font-bold ${
-                totalTarget === 100 || totalTarget === 0
-                  ? "text-emerald-400"
-                  : "text-yellow-400"
+                targetIsValid ? "text-emerald-400" : "text-yellow-400"
               }`}
             >
-              {totalTarget.toFixed(2)}%
+              {percent(totalTarget)}
+            </p>
+
+            <p className="mt-1 text-xs text-slate-500">
+              {hasSavedTargets
+                ? "Saved targets are used. Missing assets default to current allocation."
+                : "No saved targets found. Current allocation is used as the starting target."}
             </p>
           </div>
 
           <div className="flex flex-col gap-3 md:items-end">
             <p className="text-sm text-slate-400">
-              {useEqualWeightTarget
-                ? "No saved target found. Using equal-weight allocation."
-                : "Target allocation should total 100%."}
+              Target allocation should total 100%.
             </p>
 
-            <button
-              onClick={handleSaveTargets}
-              disabled={totalTarget > 0 && totalTarget !== 100}
-              className={`rounded-lg px-5 py-2 font-semibold ${
-                totalTarget === 100 || totalTarget === 0
-                  ? "bg-emerald-600 hover:bg-emerald-500"
-                  : "cursor-not-allowed bg-slate-700"
-              }`}
-            >
-              {status || "Save Targets"}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleUseCurrentAllocation}
+                className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold hover:bg-slate-700"
+              >
+                Use Current Allocation
+              </button>
+
+              <button
+                onClick={handleEqualWeight}
+                className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold hover:bg-slate-700"
+              >
+                Equal Weight
+              </button>
+
+              <button
+                onClick={handleSaveTargets}
+                disabled={!targetIsValid}
+                className={`rounded-lg px-5 py-2 font-semibold ${
+                  targetIsValid
+                    ? "bg-emerald-600 hover:bg-emerald-500"
+                    : "cursor-not-allowed bg-slate-700"
+                }`}
+              >
+                {status || "Save Targets"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -312,7 +395,7 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
                   onClick={() => setMonthlyContribution(amount)}
                   className="rounded-md bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300 hover:bg-slate-700"
                 >
-                  ${amount}
+                  {money(amount, 0)}
                 </button>
               ))}
             </div>
@@ -370,15 +453,15 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
                 </p>
 
                 <p className="mt-1 text-sm text-slate-400">
-                  {item.allocationPercent.toFixed(2)}% of investment
+                  {percent(item.allocationPercent)} of investment
                 </p>
 
                 <div className="mt-3 rounded-lg bg-slate-950 p-3 text-sm">
                   <p className="text-slate-400">Estimated Allocation</p>
                   <p className="mt-1">
-                    {item.currentPercent.toFixed(2)}% →{" "}
+                    {percent(item.currentPercent)} →{" "}
                     <span className="font-semibold text-emerald-400">
-                      {item.estimatedNewAllocation.toFixed(2)}%
+                      {percent(item.estimatedNewAllocation)}
                     </span>
                   </p>
                 </div>
@@ -405,6 +488,10 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
           <tbody>
             {recommendations.map((item) => {
               const result = item.recommendation;
+              const displayTarget =
+                targets[item.symbol] !== undefined && targets[item.symbol] !== ""
+                  ? targets[item.symbol]
+                  : Number(currentAllocationMap[item.symbol] || 0).toFixed(2);
 
               return (
                 <tr key={item.symbol} className="border-b border-slate-800">
@@ -416,19 +503,18 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
                     </div>
                   </td>
 
-                  <td className="p-3">{result.currentPercent.toFixed(2)}%</td>
+                  <td className="p-3">{percent(result.currentPercent)}</td>
 
                   <td className="p-3">
                     <input
                       type="number"
                       min="0"
                       max="100"
-                      step="1"
-                      value={targets[item.symbol] ?? ""}
+                      step="0.01"
+                      value={displayTarget}
                       onChange={(e) =>
                         handleTargetChange(item.symbol, e.target.value)
                       }
-                      placeholder="0"
                       className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 outline-none focus:border-emerald-500"
                     />
                   </td>
@@ -469,10 +555,10 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
         </table>
       </div>
 
-      {!useEqualWeightTarget && totalTarget !== 100 && (
+      {!targetIsValid && (
         <p className="mt-4 text-sm text-yellow-400">
-          Your target allocation is {totalTarget.toFixed(2)}%. Adjust targets
-          until it equals 100%.
+          Your target allocation is {percent(totalTarget)}. Adjust targets until
+          it equals 100%.
         </p>
       )}
     </section>

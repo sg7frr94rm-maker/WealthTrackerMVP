@@ -20,9 +20,6 @@ function DividendForecast() {
   const [dividends, setDividends] = useState([]);
   const [stats, setStats] = useState(null);
 
-  const monthlyDividendGoal = 100;
-  const targetYield = 4;
-
   const money = (value, decimals = 2) =>
     `$${Number(value || 0).toLocaleString("en-SG", {
       minimumFractionDigits: decimals,
@@ -96,21 +93,6 @@ function DividendForecast() {
 
   const projectedMonthlyDividend = annualDividendIncome / 12;
 
-  const dividendGoalProgress =
-    monthlyDividendGoal > 0
-      ? (projectedMonthlyDividend / monthlyDividendGoal) * 100
-      : 0;
-
-  const monthlyDividendGap = Math.max(
-    0,
-    monthlyDividendGoal - projectedMonthlyDividend
-  );
-
-  const capitalRequired =
-    monthlyDividendGap > 0
-      ? (monthlyDividendGap * 12) / (targetYield / 100)
-      : 0;
-
   const currentPortfolioValue = Number(stats?.currentValue || 0);
 
   const portfolioYield =
@@ -125,6 +107,13 @@ function DividendForecast() {
   } else if (upcomingDividends.length >= 3) {
     confidence = "Medium";
   }
+
+  const confidenceText =
+    confidence === "High"
+      ? "High — multiple upcoming dividend events declared."
+      : confidence === "Medium"
+      ? "Medium — some upcoming dividend events declared."
+      : "Low — limited upcoming declared dividend events.";
 
   const forecastByMonth = useMemo(() => {
     const months = [];
@@ -170,7 +159,7 @@ function DividendForecast() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <ForecastCard
           title="Annual Dividend Income"
           value={money(annualDividendIncome)}
@@ -194,23 +183,6 @@ function DividendForecast() {
           value={upcomingDividends.length.toLocaleString("en-SG")}
           neutral
         />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-4">
-        <ForecastCard
-          title="Monthly Dividend Goal"
-          value={money(monthlyDividendGoal)}
-        />
-
-        <ForecastCard
-          title="Dividend Gap"
-          value={money(monthlyDividendGap)}
-        />
-
-        <ForecastCard
-          title="Capital Required at 4% Yield"
-          value={money(capitalRequired, 0)}
-        />
 
         <ForecastCard
           title="Forecast Confidence"
@@ -221,75 +193,28 @@ function DividendForecast() {
       </div>
 
       <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h3 className="font-bold">Dividend Gap Analysis</h3>
-            <p className="mt-1 text-sm text-slate-400">
-              Tracks how close your current dividend income is to your monthly
-              dividend goal.
-            </p>
-          </div>
+        <h3 className="mb-2 font-bold">12-Month Dividend Forecast</h3>
 
-          <div className="text-left md:text-right">
-            <p className="text-2xl font-bold text-emerald-400">
-              {percent(dividendGoalProgress, 1)}
-            </p>
-            <p className="text-sm text-slate-400">Goal Progress</p>
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <ForecastCard
-            title="Current Monthly Dividend"
-            value={money(projectedMonthlyDividend)}
-            positive
-          />
-
-          <ForecastCard
-            title="Target Monthly Dividend"
-            value={money(monthlyDividendGoal)}
-          />
-
-          <ForecastCard
-            title="Remaining Monthly Gap"
-            value={money(monthlyDividendGap)}
-          />
-        </div>
-
-        <div className="mt-5">
-          <div className="mb-2 flex justify-between text-sm">
-            <span>Dividend Goal Progress</span>
-            <span>{percent(dividendGoalProgress, 1)}</span>
-          </div>
-
-          <div className="h-3 rounded-full bg-slate-800">
-            <div
-              className="h-3 rounded-full bg-emerald-500"
-              style={{
-                width: `${Math.min(dividendGoalProgress, 100)}%`,
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
-        <h3 className="mb-4 font-bold">12-Month Dividend Forecast</h3>
+        <p className="mb-4 text-sm text-slate-400">{confidenceText}</p>
 
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={forecastByMonth}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+
               <XAxis dataKey="month" stroke="#94a3b8" />
+
               <YAxis
                 stroke="#94a3b8"
                 tickFormatter={(value) =>
                   Number(value || 0).toLocaleString("en-SG")
                 }
               />
+
               <Tooltip
                 formatter={(value) => [money(value), "Forecast Dividend"]}
               />
+
               <Bar
                 dataKey="amount"
                 name="Forecast Dividend"
@@ -305,45 +230,49 @@ function DividendForecast() {
         </p>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[750px]">
-          <thead>
-            <tr className="border-b border-slate-800 text-left">
-              <th className="p-3">Symbol</th>
-              <th className="p-3">Expected Date</th>
-              <th className="p-3">Amount</th>
-              <th className="p-3">Source</th>
-              <th className="p-3">Notes</th>
-            </tr>
-          </thead>
+      <div className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+        <h3 className="mb-4 font-bold">Upcoming Dividend Schedule</h3>
 
-          <tbody>
-            {upcomingDividends.map((item) => (
-              <tr key={item.id} className="border-b border-slate-800">
-                <td className="p-3 font-semibold">{item.symbol}</td>
-                <td className="p-3">{item.expectedDate}</td>
-                <td className="p-3 font-semibold text-emerald-400">
-                  {money(item.expectedAmount)}
-                </td>
-                <td className="p-3">
-                  <span className="rounded-full bg-emerald-900 px-3 py-1 text-xs font-semibold text-emerald-300">
-                    Declared
-                  </span>
-                </td>
-                <td className="p-3 text-slate-400">{item.notes || "-"}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[750px]">
+            <thead>
+              <tr className="border-b border-slate-800 text-left">
+                <th className="p-3">Symbol</th>
+                <th className="p-3">Expected Date</th>
+                <th className="p-3">Amount</th>
+                <th className="p-3">Source</th>
+                <th className="p-3">Notes</th>
               </tr>
-            ))}
+            </thead>
 
-            {upcomingDividends.length === 0 && (
-              <tr>
-                <td colSpan="5" className="p-6 text-center text-slate-400">
-                  No upcoming declared dividends added yet. Forecast is
-                  currently based on historical dividends.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            <tbody>
+              {upcomingDividends.map((item) => (
+                <tr key={item.id} className="border-b border-slate-800">
+                  <td className="p-3 font-semibold">{item.symbol}</td>
+                  <td className="p-3">{item.expectedDate}</td>
+                  <td className="p-3 font-semibold text-emerald-400">
+                    {money(item.expectedAmount)}
+                  </td>
+                  <td className="p-3">
+                    <span className="rounded-full bg-emerald-900 px-3 py-1 text-xs font-semibold text-emerald-300">
+                      Declared
+                    </span>
+                  </td>
+                  <td className="p-3 text-slate-400">{item.notes || "-"}</td>
+                </tr>
+              ))}
+
+              {upcomingDividends.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="p-6 text-center text-slate-400">
+                    No upcoming declared dividends added yet. Forecast is
+                    currently based on historical dividends.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

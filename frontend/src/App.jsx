@@ -317,7 +317,7 @@ function WealthTrackerApp({ signOut, user }) {
       <div className="mx-auto max-w-7xl">
         <header className="mb-8 text-center">
           <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-            Investment Wealth Tracker
+            Wealth Investment Tracker
           </h1>
 
           <p className="mt-3 text-slate-400">

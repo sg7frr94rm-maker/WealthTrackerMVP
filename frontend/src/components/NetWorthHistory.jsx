@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LineChart,
   Line,
@@ -18,6 +18,7 @@ import {
 function NetWorthHistory({ netWorth, totalAssets, totalLiabilities }) {
   const [history, setHistory] = useState([]);
   const [status, setStatus] = useState("");
+  const [range, setRange] = useState("ALL");
 
   const loadHistory = async () => {
     const res = await getNetWorthHistory();
@@ -48,15 +49,39 @@ function NetWorthHistory({ netWorth, totalAssets, totalLiabilities }) {
         })
       : "-";
 
-  const sortedHistory = [...history].sort(
-    (a, b) => new Date(a.date) - new Date(b.date)
+  const sortedHistory = useMemo(
+    () =>
+      [...history].sort((a, b) => new Date(a.date) - new Date(b.date)),
+    [history]
   );
 
-  const startDate = sortedHistory.length > 0 ? sortedHistory[0].date : null;
+  const filteredHistory = useMemo(() => {
+    if (range === "ALL") return sortedHistory;
+
+    const days =
+      range === "1M"
+        ? 30
+        : range === "1Y"
+        ? 365
+        : range === "3Y"
+        ? 365 * 3
+        : 365 * 5;
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+
+    return sortedHistory.filter((item) => new Date(item.date) >= cutoff);
+  }, [range, sortedHistory]);
+
+  const displayHistory =
+    filteredHistory.length > 0 ? filteredHistory : sortedHistory;
+
+  const startDate =
+    displayHistory.length > 0 ? displayHistory[0].date : null;
 
   const endDate =
-    sortedHistory.length > 0
-      ? sortedHistory[sortedHistory.length - 1].date
+    displayHistory.length > 0
+      ? displayHistory[displayHistory.length - 1].date
       : null;
 
   const handleSaveSnapshot = async () => {
@@ -79,7 +104,7 @@ function NetWorthHistory({ netWorth, totalAssets, totalLiabilities }) {
           <div className="flex flex-wrap items-center gap-3">
             <h3 className="text-lg font-bold">Net Worth History</h3>
 
-            {sortedHistory.length > 0 && (
+            {displayHistory.length > 0 && (
               <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-semibold text-slate-400">
                 {formatDate(startDate)} → {formatDate(endDate)}
               </span>
@@ -99,11 +124,27 @@ function NetWorthHistory({ netWorth, totalAssets, totalLiabilities }) {
         </button>
       </div>
 
-      {sortedHistory.length === 0 ? (
+      <div className="mb-5 flex flex-wrap gap-2">
+        {["1M", "1Y", "3Y", "5Y", "ALL"].map((item) => (
+          <button
+            key={item}
+            onClick={() => setRange(item)}
+            className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+              range === item
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-700/30"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+            }`}
+          >
+            {item === "ALL" ? "All" : item}
+          </button>
+        ))}
+      </div>
+
+      {displayHistory.length === 0 ? (
         <div className="flex h-[320px] items-center justify-center text-sm text-slate-400">
           No net worth snapshots saved yet.
         </div>
-      ) : sortedHistory.length < 2 ? (
+      ) : displayHistory.length < 2 ? (
         <div className="flex h-[320px] flex-col items-center justify-center text-center text-slate-400">
           <p className="text-lg font-semibold text-white">
             Snapshot saved successfully.
@@ -120,7 +161,7 @@ function NetWorthHistory({ netWorth, totalAssets, totalLiabilities }) {
       ) : (
         <div className="h-[320px] w-full">
           <ResponsiveContainer>
-            <LineChart data={sortedHistory}>
+            <LineChart data={displayHistory}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
 
               <XAxis

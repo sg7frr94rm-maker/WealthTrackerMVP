@@ -4,6 +4,9 @@ import DividendIncomeGoal from "./DividendIncomeGoal";
 import DividendForecast from "./DividendForecast";
 import DividendGoalProjection from "./DividendGoalProjection";
 import DividendCalendar from "./DividendCalendar";
+import { refreshPrices } from "../api/portfolioApi";
+import MarketDataHealth from "./MarketDataHealth";
+import PortfolioAlert from "./PortfolioAlert";
 import {
   PieChart,
   Pie,
@@ -43,6 +46,8 @@ function PortfolioTabs({
 }) {
   const [activeTab, setActiveTab] = useState("holdingsTransactions");
   const [incomeTab, setIncomeTab] = useState("dividend");
+  const [refreshingPrices, setRefreshingPrices] = useState(false);
+  const [refreshStatus, setRefreshStatus] = useState("");
 
   const money = (value) =>
     `$${Number(value || 0).toLocaleString("en-SG", {
@@ -66,6 +71,31 @@ function PortfolioTabs({
           minute: "2-digit",
         })
       : "-";
+
+  const handleRefreshPrices = async () => {
+    try {
+      setRefreshingPrices(true);
+      setRefreshStatus("Refreshing market prices...");
+
+      const res = await refreshPrices();
+
+      const updated = res.data?.updated ?? 0;
+      const live = res.data?.live ?? 0;
+      const fallback = res.data?.fallback ?? 0;
+
+      setRefreshStatus(
+        `Updated ${updated} prices • Live: ${live} • Manual/Fallback: ${fallback}`
+      );
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 900);
+    } catch (error) {
+      console.error("Failed to refresh prices", error);
+      setRefreshStatus("Failed to refresh prices");
+      setRefreshingPrices(false);
+    }
+  };
 
   return (
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
@@ -109,9 +139,31 @@ function PortfolioTabs({
 
       {activeTab === "holdingsTransactions" && (
         <div className="space-y-8">
+
+          <MarketDataHealth performance={performance} />
+
           <SectionCard
             title="Holdings Summary"
             subtitle="Current positions generated from your transaction records."
+            action={
+              <div className="flex flex-col items-start gap-2 md:items-end">
+                <button
+                  onClick={handleRefreshPrices}
+                  disabled={refreshingPrices}
+                  className={`rounded-lg px-4 py-2 font-semibold ${
+                    refreshingPrices
+                      ? "cursor-not-allowed bg-slate-700 text-slate-400"
+                      : "bg-emerald-600 text-white hover:bg-emerald-500"
+                  }`}
+                >
+                  {refreshingPrices ? "Refreshing..." : "Refresh Market Prices"}
+                </button>
+
+                {refreshStatus && (
+                  <p className="text-xs text-slate-400">{refreshStatus}</p>
+                )}
+              </div>
+            }
           >
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1200px] text-left text-sm">
@@ -364,6 +416,15 @@ function PortfolioTabs({
 
       {activeTab === "strategy" && (
         <div className="space-y-8">
+
+          <PortfolioAlert
+            performance={performance}
+            portfolioValue={totalValue}
+            portfolioGoal={100000}
+            monthlyPassiveIncome={monthlyPassiveIncome}
+            monthlyIncomeGoal={1000}
+          />
+
           <SectionCard
             title="Portfolio Strategy"
             subtitle="Review concentration risk, rebalancing needs and watchlist ideas."
@@ -566,12 +627,16 @@ function PortfolioTabs({
   );
 }
 
-function SectionCard({ title, subtitle, children }) {
+function SectionCard({ title, subtitle, action, children }) {
   return (
     <section className="rounded-2xl border border-slate-800 bg-slate-950 p-6 shadow-xl">
-      <div className="mb-5">
-        <h2 className="text-xl font-bold">{title}</h2>
-        {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
+      <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h2 className="text-xl font-bold">{title}</h2>
+          {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
+        </div>
+
+        {action && <div>{action}</div>}
       </div>
 
       {children}
@@ -589,7 +654,9 @@ function ChartCard({ title, children }) {
 }
 
 function Th({ children }) {
-  return <th className="px-4 py-3 font-semibold whitespace-nowrap">{children}</th>;
+  return (
+    <th className="whitespace-nowrap px-4 py-3 font-semibold">{children}</th>
+  );
 }
 
 function Td({ children, positive }) {
