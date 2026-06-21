@@ -1238,48 +1238,28 @@ app.get("/report/wealth", async (req, res) => {
 
 app.get("/news", async (req, res) => {
   try {
-    const holdings = db
-      .prepare("SELECT DISTINCT symbol FROM transactions")
-      .all();
+    const holdings = db.prepare("SELECT DISTINCT symbol FROM transactions").all();
 
     const searchTerms = holdings.map((item) => {
       const symbol = item.symbol;
 
       return {
         symbol,
-        query: assetNames[symbol]
-          ? assetNames[symbol]
-          : `${symbol} ETF`,
+        query: assetNames[symbol] ? assetNames[symbol] : `${symbol} ETF`,
+        priority: "holding",
       };
     });
 
-    if (searchTerms.length === 0) {
-      searchTerms.push(
-        {
-          symbol: "ETF",
-          query: "ETF market news",
-        },
-        {
-          symbol: "S&P500",
-          query: "S&P 500 ETF news",
-        },
-        {
-          symbol: "Mutual Fund",
-          query: "global mutual fund news",
-        },
-        {
-          symbol: "Dividend Fund",
-          query: "global dividend fund news",
-        },
-        {
-          symbol: "REIT",
-          query: "REIT market news",
-        }
-      );
-    }
+    searchTerms.push(
+      { symbol: "ETF", query: "ETF market news", priority: "market" },
+      { symbol: "S&P500", query: "S&P 500 ETF news", priority: "market" },
+      { symbol: "Mutual Fund", query: "global mutual fund news", priority: "market" },
+      { symbol: "Dividend Fund", query: "global dividend fund news", priority: "market" },
+      { symbol: "REIT", query: "REIT market news", priority: "market" }
+    );
 
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
     const news = [];
 
@@ -1295,52 +1275,48 @@ app.get("/news", async (req, res) => {
         feed.items.forEach((item) => {
           const publishedDate = new Date(item.pubDate);
 
-          if (publishedDate >= oneYearAgo) {
-            news.push({
-              title: item.title,
-              link: item.link,
-              source:
-                item.source?.title ||
-                "Google News",
-              date: item.pubDate,
-              relatedTo: term.query,
-              affects: term.symbol,
-              impact: getNewsImpact(item.title),
-            });
+          if (publishedDate >= twoWeeksAgo) {
+            const impact = getNewsImpact(item.title);
+            const relevanceScore = getNewsRelevanceScore(item.title, term.query);
+
+            if (relevanceScore >= 2) {
+              news.push({
+                title: item.title,
+                link: item.link,
+                source: item.source?.title || "Google News",
+                date: item.pubDate,
+                relatedTo: term.query,
+                affects: term.symbol,
+                impact,
+                relevanceScore,
+                priority: term.priority,
+              });
+            }
           }
         });
       } catch (error) {
-        console.log(
-          `News fetch failed for ${term.query}`
-        );
+        console.error(`News fetch failed for ${term.query}:`, error.message);
       }
     }
 
     const uniqueNews = Array.from(
-      new Map(
-        news.map((item) => [
-          item.title,
-          item,
-        ])
-      ).values()
+      new Map(news.map((item) => [item.title, item])).values()
     );
 
-    uniqueNews.sort(
-      (a, b) =>
-        new Date(b.date) -
-        new Date(a.date)
-    );
+    uniqueNews.sort((a, b) => {
+      if (b.relevanceScore !== a.relevanceScore) {
+        return b.relevanceScore - a.relevanceScore;
+      }
 
-    res.json(uniqueNews.slice(0, 12));
+      return new Date(b.date) - new Date(a.date);
+    });
+
+    res.json(uniqueNews.slice(0, 8));
   } catch (error) {
-    console.error(
-      "News fetch error:",
-      error.message
-    );
+    console.error("News fetch error:", error.message);
 
     res.status(500).json({
-      message:
-        "Unable to fetch market news",
+      message: "Unable to fetch market news",
     });
   }
 });
@@ -1404,6 +1380,42 @@ function getNewsImpact(title) {
   if (hasNegative && !hasPositive) return "Negative";
 
   return "Neutral";
+}
+
+function getNewsRelevanceScore(title, query) {
+  const text = title.toLowerCase();
+  const queryText = query.toLowerCase();
+
+  let score = 0;
+
+  const keywords = [
+    "etf",
+    "fund",
+    "market",
+    "s&p",
+    "sp500",
+    "dividend",
+    "reit",
+    "yield",
+    "stocks",
+    "equity",
+    "inflation",
+    "rate",
+    "fed",
+    "bond",
+    "nasdaq",
+    "dow",
+  ];
+
+  keywords.forEach((word) => {
+    if (text.includes(word)) score += 1;
+  });
+
+  queryText.split(" ").forEach((word) => {
+    if (word.length > 2 && text.includes(word)) score += 1;
+  });
+
+  return score;
 }
 
 function calculateOpportunityMarketImpact(opportunity) {
