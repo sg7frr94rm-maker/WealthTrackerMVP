@@ -72,24 +72,13 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
   );
 
   const hasSavedTargets = Object.keys(targets).length > 0;
+  const targetIsValid = Math.abs(totalTarget - 100) < 0.05;
 
   const handleTargetChange = (symbol, value) => {
     setTargets((prev) => ({
       ...prev,
       [symbol]: value === "" ? "" : Number(value),
     }));
-  };
-
-  const handleUseCurrentAllocation = () => {
-    const currentTargets = {};
-
-    performance.forEach((item) => {
-      currentTargets[item.symbol] = Number(
-        currentAllocationMap[item.symbol] || 0
-      ).toFixed(2);
-    });
-
-    setTargets(currentTargets);
   };
 
   const handleEqualWeight = () => {
@@ -116,8 +105,15 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
 
   const handleSaveTargets = async () => {
     try {
-      await saveTargetAllocations(effectiveTargets);
-      setTargets(effectiveTargets);
+      const cleanTargets = {};
+
+      performance.forEach((item) => {
+        cleanTargets[item.symbol] = Number(effectiveTargets[item.symbol] || 0);
+      });
+
+      await saveTargetAllocations(cleanTargets);
+
+      setTargets(cleanTargets);
       setStatus("Saved");
       setTimeout(() => setStatus(""), 2000);
     } catch (error) {
@@ -165,18 +161,6 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
   const assetsNeedingAction = recommendations.filter(
     (item) => item.recommendation.action !== "Hold"
   );
-
-  const largestBuy = recommendations
-    .filter((item) => item.recommendation.action === "Buy")
-    .sort(
-      (a, b) => b.recommendation.difference - a.recommendation.difference
-    )[0];
-
-  const largestReduction = recommendations
-    .filter((item) => item.recommendation.action === "Reduce")
-    .sort(
-      (a, b) => a.recommendation.difference - b.recommendation.difference
-    )[0];
 
   const buyRecommendations = recommendations
     .filter((item) => item.recommendation.action === "Buy")
@@ -233,16 +217,12 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
       ? "Moderate Drift"
       : "Significant Drift";
 
-  const alignmentScore = Math.max(0, 100 - assetsNeedingAction.length * 10);
-
   const portfolioStatusColor =
     portfolioStatus === "Well Balanced"
       ? "text-emerald-400"
       : portfolioStatus === "Minor Drift"
       ? "text-yellow-400"
       : "text-red-400";
-
-  const targetIsValid = Math.abs(totalTarget - 100) < 0.05;
 
   return (
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
@@ -281,12 +261,6 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
             </p>
 
             <div className="flex flex-wrap gap-2">
-              <button
-                onClick={handleUseCurrentAllocation}
-                className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold hover:bg-slate-700"
-              >
-                Use Current Allocation
-              </button>
 
               <button
                 onClick={handleEqualWeight}
@@ -311,7 +285,7 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
         </div>
       </div>
 
-      <div className="mb-5 grid gap-4 md:grid-cols-6">
+      <div className="mb-5 grid gap-4 md:grid-cols-3">
         <SummaryCard title="Portfolio Value" value={money(totalValue)} positive />
 
         <SummaryCard
@@ -321,44 +295,8 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
         />
 
         <SummaryCard
-          title="Portfolio Alignment"
-          value={`${alignmentScore}/100`}
-          customClass={
-            alignmentScore >= 80
-              ? "text-emerald-400"
-              : alignmentScore >= 60
-              ? "text-yellow-400"
-              : "text-red-400"
-          }
-        />
-
-        <SummaryCard
           title="Assets Needing Action"
           value={assetsNeedingAction.length}
-        />
-
-        <SummaryCard
-          title="Recommended Investment"
-          value={
-            largestBuy
-              ? `${largestBuy.symbol} ${money(
-                  largestBuy.recommendation.difference
-                )}`
-              : "None"
-          }
-          positive={Boolean(largestBuy)}
-        />
-
-        <SummaryCard
-          title="Largest Reduction"
-          value={
-            largestReduction
-              ? `${largestReduction.symbol} ${money(
-                  Math.abs(largestReduction.recommendation.difference)
-                )}`
-              : "None"
-          }
-          negative={Boolean(largestReduction)}
         />
       </div>
 
@@ -401,23 +339,6 @@ function ContributionPlanner({ performance = [], totalValue = 0 }) {
             </div>
           </div>
         </div>
-
-        {largestBuy && (
-          <div className="mb-5 rounded-xl border border-emerald-700 bg-emerald-950/20 p-5">
-            <h3 className="text-lg font-bold text-emerald-400">
-              Next Investment Recommendation
-            </h3>
-
-            <p className="mt-2 text-2xl font-bold">
-              Invest {money(monthlyContribution)} into {largestBuy.symbol}
-            </p>
-
-            <p className="mt-2 text-slate-300">
-              This investment helps bring your portfolio closer to its target
-              allocation.
-            </p>
-          </div>
-        )}
 
         <div className="mb-4 grid gap-3 md:grid-cols-3">
           <MiniCard title="Investment Amount" value={money(monthlyContribution)} />

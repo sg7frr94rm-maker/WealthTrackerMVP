@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getMarketNews } from "../api/portfolioApi";
 import Opportunities from "./Opportunities";
+import Watchlist from "./Watchlist";
 
 function MarketNews() {
   const [activeTab, setActiveTab] = useState("news");
@@ -86,17 +87,31 @@ function MarketNews() {
       <div className="mb-5">
         <h2 className="text-xl font-bold">Market Intelligence</h2>
         <p className="mt-1 text-sm text-slate-400">
-          Review market news impact and investment opportunities.
+          Review market news impact, investment opportunities and assets you are
+          watching.
         </p>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
-        <TabButton active={activeTab === "news"} onClick={() => setActiveTab("news")}>
+        <TabButton
+          active={activeTab === "news"}
+          onClick={() => setActiveTab("news")}
+        >
           Market News
         </TabButton>
 
-        <TabButton active={activeTab === "opportunities"} onClick={() => setActiveTab("opportunities")}>
+        <TabButton
+          active={activeTab === "opportunities"}
+          onClick={() => setActiveTab("opportunities")}
+        >
           Investment Opportunities
+        </TabButton>
+
+        <TabButton
+          active={activeTab === "watchlist"}
+          onClick={() => setActiveTab("watchlist")}
+        >
+          Asset Watchlist
         </TabButton>
       </div>
 
@@ -120,7 +135,11 @@ function MarketNews() {
           </div>
 
           <div className="mb-6 grid gap-4 md:grid-cols-4">
-            <SentimentCard title="Overall Sentiment" value={overallSentiment} type={overallSentiment} />
+            <SentimentCard
+              title="Overall Sentiment"
+              value={overallSentiment}
+              type={overallSentiment}
+            />
 
             <SentimentCard
               title="Market Risk Level"
@@ -134,9 +153,17 @@ function MarketNews() {
               }
             />
 
-            <SentimentCard title="Affected Holdings" value={affectedHoldings.length} type="Neutral" />
+            <SentimentCard
+              title="Affected Holdings"
+              value={affectedHoldings.length}
+              type="Neutral"
+            />
 
-            <SentimentCard title="Latest News Date" value={latestNewsDate} type="Neutral" />
+            <SentimentCard
+              title="Latest News Date"
+              value={latestNewsDate}
+              type="Neutral"
+            />
           </div>
 
           {affectedHoldings.length > 0 && (
@@ -221,6 +248,19 @@ function MarketNews() {
       )}
 
       {activeTab === "opportunities" && <Opportunities />}
+
+      {activeTab === "watchlist" && (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-bold">Asset Watchlist</h3>
+            <p className="mt-1 text-sm text-slate-400">
+              Monitor assets you may want to buy in the future.
+            </p>
+          </div>
+
+          <Watchlist />
+        </div>
+      )}
     </section>
   );
 }

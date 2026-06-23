@@ -1553,14 +1553,17 @@ app.get("/opportunities", async (req, res) => {
 });
 
 app.get("/target-allocations", (req, res) => {
-  const rows = db
-    .prepare("SELECT symbol, targetPercent FROM target_allocations")
+  const allocations = db
+    .prepare(`
+      SELECT symbol, targetPercent
+      FROM target_allocations
+    `)
     .all();
 
   const targets = {};
 
-  rows.forEach((row) => {
-    targets[row.symbol] = row.targetPercent;
+  allocations.forEach((item) => {
+    targets[item.symbol] = item.targetPercent;
   });
 
   res.json(targets);
@@ -1569,14 +1572,18 @@ app.get("/target-allocations", (req, res) => {
 app.put("/target-allocations", (req, res) => {
   const targets = req.body.targets || {};
 
+  const deleteAll = db.prepare(`
+    DELETE FROM target_allocations
+  `);
+
   const insert = db.prepare(`
     INSERT INTO target_allocations (symbol, targetPercent)
     VALUES (?, ?)
-    ON CONFLICT(symbol) DO UPDATE SET
-      targetPercent = excluded.targetPercent
   `);
 
   const saveMany = db.transaction((items) => {
+    deleteAll.run();
+
     Object.entries(items).forEach(([symbol, targetPercent]) => {
       insert.run(symbol.toUpperCase(), Number(targetPercent || 0));
     });

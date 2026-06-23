@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Watchlist from "./Watchlist";
 import DividendIncomeGoal from "./DividendIncomeGoal";
 import DividendForecast from "./DividendForecast";
 import DividendGoalProjection from "./DividendGoalProjection";
@@ -7,6 +6,8 @@ import DividendCalendar from "./DividendCalendar";
 import { refreshPrices } from "../api/portfolioApi";
 import MarketDataHealth from "./MarketDataHealth";
 import PortfolioAlert from "./PortfolioAlert";
+import PortfolioHealthScore from "./PortfolioHealthScore";
+import PortfolioReview from "./PortfolioReview";
 import {
   PieChart,
   Pie,
@@ -37,7 +38,6 @@ function PortfolioTabs({
   handleEdit,
   handleDelete,
   monthlyPassiveIncome,
-  totalDividends,
   dividendForm,
   handleDividendChange,
   handleDividendSubmit,
@@ -46,6 +46,7 @@ function PortfolioTabs({
 }) {
   const [activeTab, setActiveTab] = useState("holdingsTransactions");
   const [incomeTab, setIncomeTab] = useState("dividend");
+  const [strategyTab, setStrategyTab] = useState("health");
   const [refreshingPrices, setRefreshingPrices] = useState(false);
   const [refreshStatus, setRefreshStatus] = useState("");
 
@@ -101,7 +102,6 @@ function PortfolioTabs({
     <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
       <div className="mb-5">
         <h2 className="text-xl font-bold">Portfolio Management</h2>
-
         <p className="mt-1 text-sm text-slate-400">
           Manage holdings, allocation, portfolio strategy, dividends and income.
         </p>
@@ -139,7 +139,6 @@ function PortfolioTabs({
 
       {activeTab === "holdingsTransactions" && (
         <div className="space-y-8">
-
           <MarketDataHealth performance={performance} />
 
           <SectionCard
@@ -415,56 +414,53 @@ function PortfolioTabs({
       )}
 
       {activeTab === "strategy" && (
-        <div className="space-y-8">
+        <div className="space-y-6">
+          <div className="flex flex-wrap gap-2">
+            <TabButton
+              active={strategyTab === "health"}
+              onClick={() => setStrategyTab("health")}
+            >
+              Health Score
+            </TabButton>
 
-          <PortfolioAlert
-            performance={performance}
-            portfolioValue={totalValue}
-            portfolioGoal={100000}
-            monthlyPassiveIncome={monthlyPassiveIncome}
-            monthlyIncomeGoal={1000}
-          />
+            <TabButton
+              active={strategyTab === "alerts"}
+              onClick={() => setStrategyTab("alerts")}
+            >
+              Alerts
+            </TabButton>
 
-          <SectionCard
-            title="Portfolio Strategy"
-            subtitle="Review concentration risk, rebalancing needs and watchlist ideas."
-          >
-            <div className="grid gap-4 md:grid-cols-2">
-              {performance.map((item) => {
-                const allocation =
-                  totalValue > 0 ? (item.currentValue / totalValue) * 100 : 0;
+            <TabButton
+              active={strategyTab === "review"}
+              onClick={() => setStrategyTab("review")}
+            >
+              Portfolio Review
+            </TabButton>
+          </div>
 
-                return (
-                  <div
-                    key={item.symbol}
-                    className="rounded-xl border border-slate-800 bg-slate-950 p-5"
-                  >
-                    <div className="mb-2 flex justify-between">
-                      <h3 className="font-bold">{item.symbol}</h3>
+          {strategyTab === "health" && (
+            <PortfolioHealthScore
+              performance={performance}
+              portfolioValue={totalValue}
+              portfolioGoal={100000}
+              monthlyPassiveIncome={monthlyPassiveIncome}
+              monthlyIncomeGoal={1000}
+            />
+          )}
 
-                      <span
-                        className={
-                          allocation > 40
-                            ? "text-red-400"
-                            : "text-emerald-400"
-                        }
-                      >
-                        {allocation.toFixed(2)}%
-                      </span>
-                    </div>
+          {strategyTab === "alerts" && (
+            <PortfolioAlert
+              performance={performance}
+              portfolioValue={totalValue}
+              portfolioGoal={100000}
+              monthlyPassiveIncome={monthlyPassiveIncome}
+              monthlyIncomeGoal={1000}
+            />
+          )}
 
-                    <p className="text-sm text-slate-400">
-                      {allocation > 40
-                        ? "This holding is above 40% of your portfolio. Review concentration risk."
-                        : "Allocation appears manageable."}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </SectionCard>
-
-          <Watchlist />
+          {strategyTab === "review" && (
+            <PortfolioReview performance={performance} totalValue={totalValue} />
+          )}
         </div>
       )}
 
@@ -570,9 +566,7 @@ function PortfolioTabs({
                           <Td>{dividend.date}</Td>
                           <Td>
                             <button
-                              onClick={() =>
-                                handleDividendDelete(dividend.id)
-                              }
+                              onClick={() => handleDividendDelete(dividend.id)}
                               className="rounded-md bg-red-600 px-3 py-1 hover:bg-red-500"
                             >
                               Delete
