@@ -55,16 +55,17 @@ app.get("/api/backup-db", (req, res) => {
 });
 
 const manualPrices = {
-  FKIQX: 6.46,
+  "0P00009VED.SI": 6.46,
   "0P0001EDGU.SI": 0.54,
   "0P00013206.SI": 1.01,
 };
 
 const assetNames = {
-  FKIQX: "Franklin K2 Alternative Strategies Fund",
+  "0P00009VED.SI": "Franklin Income A(Mdis)SGD-H1",
   "0P0001EDGU.SI":
     "Manulife Global Fund - Asia Pacific REIT Fund (SGD Hedged) MDIST(G)",
   "0P00013206.SI": "Amova Global Dividend Equity Fund - SGD Hedged MDis Cash",
+  "0P0001EDGU.SI": "Manulife Global Fund - Asia Pacific REIT Fund (SGD Hedged) MDIST(G)",
   VWRA: "Vanguard FTSE All-World UCITS ETF",
   CSPX: "iShares Core S&P 500 UCITS ETF",
   VOO: "Vanguard S&P 500 ETF",
